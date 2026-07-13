@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anesthetic Kit Management System</title>
+    <style>
+        :root {
+            --bg-intravenous: #e3f2fd;
+            --bg-relaxant: #fff9c4;
+            --bg-narcotics: #ffe0b2;
+            --bg-reversal: #f5f5f5;
+            --bg-inhalation: #f3e5f5;
+            --bg-local: #e0f2f1;
+            --bg-cardio: #ffcdd2;
+            --bg-antiemetics: #e1f5fe;
+            --bg-antibiotics: #efebe9;
+            --bg-other: #fffde7;
+            --bg-ivfluid: #e0f7fa;
+            --bg-otherother: #ffffff;
+            
+            --primary: #2c3e50;
+            --accent: #16a085;
+            --warning: #f39c12;
+            --danger: #c0392b;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f6f8;
+            color: #333;
+        }
+
+        .no-print-area {
+            max-width: 1300px;
+            margin: 0 auto 40px auto;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        }
+
+        h2, h3 { color: var(--primary); margin-top: 0; }
+        .grid-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .form-group { display: flex; flex-direction: column; }
+        label { font-weight: bold; margin-bottom: 5px; font-size: 13px; color: #444; }
+        input, select, textarea { padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
+        
+        .btn-group { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 20px; padding: 15px; background: #eef2f3; border-radius: 6px; }
+        .btn { padding: 12px 24px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; color: white; font-size: 14px; display: inline-flex; align-items: center; gap: 8px; }
+        .btn-success { background-color: var(--accent); }
+        .btn-a4 { background-color: #2980b9; }
+        .btn-a5 { background-color: #8e44ad; }
+        .btn-pharma { background-color: #d35400; }
+        .btn:hover { opacity: 0.9; }
+
+        .group-intravenous { background-color: var(--bg-intravenous) !important; }
+        .group-relaxant { background-color: var(--bg-relaxant) !important; }
+        .group-narcotics { background-color: var(--bg-narcotics) !important; }
+        .group-reversal { background-color: var(--bg-reversal) !important; }
+        .group-inhalation { background-color: var(--bg-inhalation) !important; }
+        .group-local { background-color: var(--bg-local) !important; }
+        .group-cardio { background-color: var(--bg-cardio) !important; }
+        .group-antiemetics { background-color: var(--bg-antiemetics) !important; }
+        .group-antibiotics { background-color: var(--bg-antibiotics) !important; }
+        .group-other { background-color: var(--bg-other) !important; }
+        .group-ivfluid { background-color: var(--bg-ivfluid) !important; }
+        .group-otherother { background-color: var(--bg-otherother) !important; }
+
+        table.ui-table { width: 100%; border-collapse: collapse; margin-top: 15px; background: white; }
+        table.ui-table th, table.ui-table td { border: 1px solid #bdc3c7; padding: 10px; text-align: left; font-size: 14px; }
+        table.ui-table th { background-color: var(--primary); color: white; text-align: center; }
+        
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 11px; color: white; font-weight: bold; display: inline-block; }
+        .badge-danger { background-color: var(--danger); }
+        .badge-warning { background-color: var(--warning); }
+        .badge-success { background-color: #27ae60; }
+
+        #print-a4-nurse, #print-a5-nurse, #print-a5-pharma { display: none; }
+
+        /* ---------------- PRINT LAYOUTS ---------------- */
+        @media print {
+            .no-print-area { display: none !important; }
+            body { background: white; margin: 0; padding: 0; color: #000; font-family: 'Times New Roman', Times, serif, Arial; }
+            
+            body.mode-a4 #print-a4-nurse { display: block !important; }
+            @page { size: A4 portrait; margin: 8mm; }
+
+            body.mode-a5-nurse #print-a5-nurse { display: block !important; }
+            body.mode-a5-pharma #print-a5-pharma { display: block !important; }
+            body.mode-a5-nurse @page, body.mode-a5-pharma @page { size: A5 landscape; margin: 5mm; }
+
+            .print-container { width: 100%; background: white; }
+            .print-title { text-align: center; font-size: 16px; font-weight: bold; margin-bottom: 8px; text-transform: uppercase; }
+            
+            .print-meta-grid { display: flex; flex-wrap: wrap; gap: 8px; font-size: 12px; margin-bottom: 8px; border-bottom: 1px solid #000; padding-bottom: 8px; }
+            .meta-cell { flex: 1; min-width: 23%; }
+            .dotted-line { border-bottom: 1px dotted #000; display: inline-block; min-width: 100px; padding-left: 4px; }
+            
+            table.print-table { width: 100%; border-collapse: collapse; margin-top: 5px; }
+            table.print-table th, table.print-table td { border: 1px solid #000 !important; padding: 4px 6px; font-size: 12px; color: black; }
+            table.print-table th { background-color: #f2f2f2 !important; text-align: center; font-weight: bold; }
+            
+            .cat-header { background-color: #e6e6e6 !important; font-weight: bold; font-size: 12px; text-align: left; padding-left: 5px; }
+            .footer-signature { margin-top: 20px; display: flex; justify-content: space-between; font-size: 12px; font-weight: bold; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- WEB INTERFACE AREA -->
+<div class="no-print-area">
+    <h2>🧰 Anesthetic Kit Management System (IPD to OR)</h2>
+    <hr>
+    
+    <h3>1. Case Details & Metadata</h3>
+    <div class="grid-form">
+        <div class="form-group">
+            <label>Patient Name:</label>
+            <input type="text" id="pName" placeholder="Enter patient name">
+        </div>
+        <div class="form-group">
+            <label>HN:</label>
+            <input type="text" id="pHN" placeholder="Enter HN">
+        </div>
+        <div class="form-group">
+            <label>Ward:</label>
+            <select id="pWard">
+                <option value="ICU">ICU</option>
+                <option value="CCU">CCU</option>
+                <option value="Ward 4">Ward 4</option>
+                <option value="Ward 5">Ward 5</option>
+                <option value="Ward 6">Ward 6</option>
+                <option value="Ward 7">Ward 7</option>
+                <option value="Ward 8">Ward 8</option>
+                <option value="Ward 9">Ward 9</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Date (Auto Real-time):</label>
+            <input type="date" id="pDate">
+        </div>
+        <div class="form-group">
+            <label>Time Used (Real-time):</label>
+            <input type="time" id="pTime" step="1">
+        </div>
+        <div class="form-group">
+            <label>Doctor:</label>
+            <input type="text" id="pDoctor" placeholder="Enter doctor name">
+        </div>
+        <div class="form-group" style="grid-column: span 2;">
+            <label>Operation:</label>
+            <input type="text" id="pOperation" placeholder="Enter operation name">
+        </div>
+        <div class="form-group">
+            <label>Anesthesia Kit No (1-10):</label>
+            <select id="pKitNo">
+                <script>
+                    for(let i=1; i<=10; i++) document.write(`<option value="${i}">Anesthesia Kit No. ${i}</option>`);
+                </script>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Seal No.1 OUT:</label>
+            <input type="text" id="pSealOut" placeholder="Seal No.1 Out">
+        </div>
+        <div class="form-group">
+            <label>Seal No.2 IN:</label>
+            <input type="text" id="pSealIn" placeholder="Seal No.2 In">
+        </div>
+        <div class="form-group">
+            <label style="color:var(--danger)">Last Update Document:</label>
+            <input type="date" id="pLastUpdate">
+        </div>
+    </div>
+    <div class="form-group" style="margin-bottom: 20px;">
+        <label>Dispense add on medicine:</label>
+        <textarea id="pAddOn" rows="2" placeholder="Enter details for add on medicine..."></textarea>
+    </div>
+
+    <h3>2. Record Medication Usage</h3>
+    <div class="grid-form" style="background: #eef2f7; padding: 20px; border-radius: 6px; border-left: 5px solid var(--primary);">
+        <div class="form-group">
+            <label>🔍 Filter by Sub-Kit Box:</label>
+            <select id="subBoxFilter" onchange="filterDrugMenu()">
+                <option value="ALL">-- Show All Medications --</option>
+                <option value="box1">Box 1: Controlled substances</option>
+                <option value="box2">Box 2: Mid-size items</option>
+                <option value="box3">Box 3: Large items</option>
+            </select>
+        </div>
+        <div class="form-group" style="grid-column: span 2;">
+            <label>Select Medication Description:</label>
+            <select id="drugSelect">
+                <!-- Loaded dynamically by JS -->
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Used Qty:</label>
+            <input type="number" id="useQty" min="1" value="1">
+        </div>
+        <div class="form-group">
+            <label>📅 Expired Date Tracking:</label>
+            <input type="date" id="expDate">
+        </div>
+    </div>
+    
+    <div style="text-align: right; margin-top: 15px;">
+        <button class="btn btn-success" onclick="addDrugLog()">➕ Add Medication Entry</button>
+    </div>
+
+    <h3>3. Current Case Live Entry Stream</h3>
+    <table class="ui-table" id="liveStreamTable">
+        <thead>
+            <tr>
+                <th>Timestamp</th>
+                <th>Category</th>
+                <th>Medication Description</th>
+                <th>Qty Used</th>
+                <th>Expiration Date</th>
+                <th>Alert Status (3 Mos)</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td colspan="7" style="text-align:center; color:#7f8c8d;">No medication entry recorded yet.</td></tr>
+        </tbody>
+    </table>
+
+    <h3>4. Staff Signatures</h3>
+    <div class="grid-form">
+        <div class="form-group">
+            <label>Prepared By:</label>
+            <input type="text" id="staffPrep" placeholder="Pharmacist / Staff name">
+        </div>
+        <div class="form-group">
+            <label>Received By:</label>
+            <input type="text" id="staffRec" placeholder="Nurse name">
+        </div>
+    </div>
+
+    <div class="btn-group">
+        <button class="btn btn-a4" onclick="executePrint('A4-NURSE')">🖨️ Print Nurse A4 Checklist Sheet</button>
+        <button class="btn btn-a5" onclick="executePrint('A5-NURSE')">🖨️ Print Nurse A5 Charging Record</button>
+        <button class="btn btn-pharma" onclick="executePrint('A5-PHARMA')">🖨️ Print Pharmacist Restock Order (Selected Only)</button>
+    </div>
+</div>
+
+
+<!-- =================== 📄 PRINT LAYOUT: NURSE SHEET A4 =================== -->
+<div id="print-a4-nurse" class="print-container">
+    <div style="text-align: right; font-size: 11px; font-weight: bold; margin-bottom: 5px;">
+        Last update: <span id="out-a4-lastupdate"></span>
+    </div>
+    <div class="print-title">Anesthesia Kit No. <span id="out-a4-kitno-header"></span></div>
+    
+    <div class="print-meta-grid">
+        <div class="meta-cell" style="min-width: 30%">Patient Name: <span class="dotted-line" id="out-a4-pname" style="min-width: 150px;"></span></div>
+        <div class="meta-cell">HN: <span class="dotted-line" id="out-a4-hn"></span></div>
+        <div class="meta-cell">Ward: <span class="dotted-line" id="out-a4-ward"></span></div>
+        <div class="meta-cell">Date: <span class="dotted-line" id="out-a4-date"></span></div>
+        <div class="meta-cell">Time: <span class="dotted-line" id="out-a4-time"></span></div>
+        <div class="meta-cell" style="min-width: 30%">Doctor: <span class="dotted-line" id="out-a4-doc"></span></div>
+        <div class="meta-cell" style="min-width: 50%">Operation: <span class="dotted-line" id="out-a4-op" style="min-width: 250px;"></span></div>
+    </div>
+
+    <table class="print-table" id="table-a4-body">
+        <thead>
+            <tr>
+                <th style="width: 40%;">Description</th>
+                <th style="width: 15%;">Prepare</th>
+                <th style="width: 15%;">Used</th>
+                <th style="width: 15%;">Balance</th>
+                <th style="width: 15%;">Description</th>
+                <th style="width: 15%;">Prepare</th>
+                <th style="width: 15%;">Used</th>
+                <th style="width: 15%;">Balance</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Double column layout generated dynamically via JS -->
+        </tbody>
+    </table>
+    
+    <div style="font-size: 11px; margin-top: 10px;">
+        <strong>Dispense add on medicine:</strong> <span class="dotted-line" id="out-a4-addon" style="width: 80%;"></span>
+    </div>
+
+    <div class="footer-signature">
+        <div>Prepared by: <span class="dotted-line" id="out-a4-prep" style="min-width:140px;"></span></div>
+        <div>Received by: <span class="dotted-line" id="out-a4-rec" style="min-width:140px;"></span></div>
+        <div>Seal No.1 (OUT): <span class="dotted-line" id="out-a4-seal1"></span> Seal No.2 (IN): <span class="dotted-line" id="out-a4-seal2"></span></div>
+    </div>
+</div>
+
+
+<!-- =================== 📄 PRINT LAYOUT: NURSE CHARGING A5 =================== -->
+<div id="print-a5-nurse" class="print-container">
+    <div class="print-title" style="font-size: 14px;">Anesthesia Charging Record (A5)</div>
+    
+    <div class="print-meta-grid" style="font-size: 11px;">
+        <div class="meta-cell">Patient Name: <span class="dotted-line" id="out-a5n-pname"></span></div>
+        <div class="meta-cell">HN: <span class="dotted-line" id="out-a5n-hn"></span></div>
+        <div class="meta-cell">Ward: <span class="dotted-line" id="out-a5n-ward"></span></div>
+        <div class="meta-cell">Date: <span class="dotted-line" id="out-a5n-date"></span></div>
+        <div class="meta-cell">Time: <span class="dotted-line" id="out-a5n-time"></span></div>
+        <div class="meta-cell">Doctor: <span class="dotted-line" id="out-a5n-doc"></span></div>
+        <div class="meta-cell" style="min-width: 40%">Operation: <span class="dotted-line" id="out-a5n-op"></span></div>
+        <div class="meta-cell">BOX No: <span class="dotted-line" id="out-a5n-kitno"></span></div>
+    </div>
+
+    <table class="print-table" id="table-a5n-body">
+        <thead>
+            <tr>
+                <th style="width: 55%;">Description</th>
+                <th style="width: 15%;">Prepare</th>
+                <th style="width: 15%;">Used</th>
+                <th style="width: 15%;">Balance</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Only displays used items for current case -->
+        </tbody>
+    </table>
+    
+    <div style="font-size: 11px; margin-top: 8px;">
+        <strong>Dispense add on medicine:</strong> <span class="dotted-line" id="out-a5n-addon" style="width: 80%;"></span>
+    </div>
+
+    <div class="footer-signature" style="margin-top: 15px;">
+        <div>Prepared by: <span class="dotted-line" id="out-a5n-prep"></span></div>
+        <div>Received by: <span class="dotted-line" id="out-a5n-rec"></span></div>
+        <div>Seal No.1 (OUT): <span class="dotted-line" id="out-a5n-seal1"></span></div>
+    </div>
+</div>
+
+
+<!-- =================== 📄 PRINT LAYOUT: PHARMACIST RESTOCK ORDER A5 (SELECTED ONLY) =================== -->
+<div id="print-a5-pharma" class="print-container">
+    <div style="text-align: right; font-size: 12px; font-weight: bold; margin-bottom: 2px;">
+        Last update: <span id="out-a5p-lastupdate"></span>
+    </div>
+    <div class="print-title" style="font-size: 15px; letter-spacing: 0.5px;">Anesthesia Kit No. <span id="out-a5p-kitno"></span></div>
+    <div style="text-align: center; font-size: 13px; font-weight: bold; margin-bottom: 10px; text-decoration: underline;">Pharmacist Restock Order List (A5 Portrait Format)</div>
+    
+    <table class="print-table" id="table-a5p-body">
+        <thead>
+            <tr>
+                <th style="width: 50%; text-align: left;">Description</th>
+                <th style="width: 15%;">no (Qty Filled)</th>
+                <th style="width: 35%;">Exp Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Only displaying user-selected restock rows. Empty state handling built-in -->
+        </tbody>
+    </table>
+
+    <div class="footer-signature" style="margin-top: 30px; font-size: 12px; line-height: 1.8;">
+        <div>Check By: ....................................................</div>
+        <div>Date: ....................................................</div>
+        <div>Due Date: ....................................................</div>
+    </div>
+</div>
+
+
+<script>
+    // System Master DB - Complete dataset
+    const MasterDrugData = [
+        { cat: "Intravenous anesthesia", style: "group-intravenous", name: "Diprivan 20 ml inj.", defStock: 1, subBox: "" },
+        { cat: "Intravenous anesthesia", style: "group-intravenous", name: "Anepol 120 mg/12 ml", defStock: 1, subBox: "" },
+        { cat: "Intravenous anesthesia", style: "group-intravenous", name: "Fresofol 1% MCT/LCT INJ) 20 ml", defStock: 1, subBox: "" },
+        { cat: "Intravenous anesthesia", style: "group-intravenous", name: "Fresofol 1% MCT/LCT INJ) 50 ml", defStock: 1, subBox: "" },
+        { cat: "Intravenous anesthesia", style: "group-intravenous", name: "Etomidate-Lipuro 10 ml", defStock: 1, subBox: "" },
+        { cat: "Intravenous anesthesia", style: "group-intravenous", name: "midazolam 5 mg/ml inj.", defStock: 2, subBox: "box1" },
+        { cat: "Intravenous anesthesia", style: "group-intravenous", name: "Valium 10 mg(Diazepam)", defStock: 1, subBox: "box2" },
+        { cat: "Intravenous anesthesia", style: "group-intravenous", name: "Ketamine (50mg/ml) 10 ml vial", defStock: 1, subBox: "" },
+        
+        { cat: "Muscle Relaxant", style: "group-relaxant", name: "Succinyl 100 mg/2ml inj", defStock: 1, subBox: "" },
+        { cat: "Muscle Relaxant", style: "group-relaxant", name: "Esmeron 50 mg", defStock: 1, subBox: "" },
+        { cat: "Muscle Relaxant", style: "group-relaxant", name: "Tracrium inj 25 mg", defStock: 1, subBox: "" },
+        { cat: "Muscle Relaxant", style: "group-relaxant", name: "Tracrium inj 50 mg", defStock: 1, subBox: "" },
+        { cat: "Muscle Relaxant", style: "group-relaxant", name: "Nimbex 10 mg/5ml", defStock: 2, subBox: "" },
+        
+        { cat: "Narcotics/Analgesics", style: "group-narcotics", name: "Morphine 10 mg inj", defStock: 2, subBox: "box1" },
+        { cat: "Narcotics/Analgesics", style: "group-narcotics", name: "Pethidine 50 mg inj", defStock: 2, subBox: "box1" },
+        { cat: "Narcotics/Analgesics", style: "group-narcotics", name: "Fentanyl 100 mcg", defStock: 2, subBox: "box1" },
+        { cat: "Narcotics/Analgesics", style: "group-narcotics", name: "Dynastat 40 mg inj.", defStock: 1, subBox: "box2" },
+        
+        { cat: "Reversal Agent", style: "group-reversal", name: "Atropine 0.6 mg/ml", defStock: 4, subBox: "box2" },
+        { cat: "Reversal Agent", style: "group-reversal", name: "Prostigmin 2.5 mg/ml(Neostigmine)", defStock: 2, subBox: "box2" },
+        { cat: "Reversal Agent", style: "group-reversal", name: "Glyco-P 0.2mg/ml", defStock: 2, subBox: "box2" },
+        { cat: "Reversal Agent", style: "group-reversal", name: "Narcan(Naloxone)", defStock: 1, subBox: "" },
+        { cat: "Reversal Agent", style: "group-reversal", name: "Narcotan 0.4mg/ml", defStock: 1, subBox: "box3" },
+        { cat: "Reversal Agent", style: "group-reversal", name: "Bridion 200mg/2ml (Sugammadex)", defStock: 1, subBox: "" },
+        { cat: "Reversal Agent", style: "group-reversal", name: "*Protamine Sulphate 10mg/ml", defStock: 1, subBox: "" },
+        
+        { cat: "Inhalation. Anesthetics", style: "group-inhalation", name: "Sevoflurane (hr)", defStock: 0, subBox: "" },
+        { cat: "Inhalation. Anesthetics", style: "group-inhalation", name: "Desflurane(hr)", defStock: 0, subBox: "" },
+        { cat: "Inhalation. Anesthetics", style: "group-inhalation", name: "Isoflurane(hr)", defStock: 0, subBox: "" },
+        
+        { cat: "Local Anesthesia", style: "group-local", name: "Xylocaine c ADR 1%, 2 %", defStock: 0, subBox: "" },
+        { cat: "Local Anesthesia", style: "group-local", name: "Xylocaine withoutADR 1%, 2 %", defStock: 0, subBox: "" },
+        { cat: "Local Anesthesia", style: "group-local", name: "Marcaine 0.5% 10 ml , 20 ml", defStock: 0, subBox: "" },
+        { cat: "Local Anesthesia", style: "group-local", name: "Marcaine 0.5% Spinal(Heavy)", defStock: 0, subBox: "" },
+        { cat: "Local Anesthesia", style: "group-local", name: "Marcaine 0.5% Spinal (Isobaric)", defStock: 0, subBox: "" },
+        { cat: "Local Anesthesia", style: "group-local", name: "Chirocaine 10 ml", defStock: 0, subBox: "" },
+        { cat: "Local Anesthesia", style: "group-local", name: "Lidocain INJ c ADR 1%10ml", defStock: 0, subBox: "" },
+        
+        { cat: "Cardiovascular", style: "group-cardio", name: "Adrenaline 1 mg/ml", defStock: 1, subBox: "box2" },
+        { cat: "Cardiovascular", style: "group-cardio", name: "Epinephrine", defStock: 1, subBox: "box1" },
+        { cat: "Cardiovascular", style: "group-cardio", name: "Cardepine 2 mg/2ml inj", defStock: 1, subBox: "box2" },
+        { cat: "Cardiovascular", style: "group-cardio", name: "Ephedrine 30 mg inj", defStock: 2, subBox: "box1" },
+        { cat: "Cardiovascular", style: "group-cardio", name: "Herbesser 10 mg", defStock: 1, subBox: "box3" },
+        { cat: "Cardiovascular", style: "group-cardio", name: "Sodium Blcarb10 ml", defStock: 1, subBox: "" },
+        { cat: "Cardiovascular", style: "group-cardio", name: "Sodium Bicarb 10ml", defStock: 1, subBox: "box3" },
+        { cat: "Cardiovascular", style: "group-cardio", name: "OmePRazole 40 mg Inj", defStock: 1, subBox: "" },
+        { cat: "Cardiovascular", style: "group-cardio", name: "OmePRAzole 40 Mg Inj", defStock: 1, subBox: "box3" },
+        { cat: "Cardiovascular", style: "group-cardio", name: "Cacium Gluconate 10 ml", defStock: 2, subBox: "box3" },
+        { cat: "Cardiovascular", style: "group-cardio", name: "Adalat (Nelapine) 5 mg, 10 mg", defStock: 0, subBox: "" },
+        { cat: "Cardiovascular", style: "group-cardio", name: "*Cordarone 150mg/3ml", defStock: 0, subBox: "" },
+        { cat: "Cardiovascular", style: "group-cardio", name: "*N.T.G 25 Mg Dext Inj 250Ml", defStock: 0, subBox: "" },
+        { cat: "Cardiovascular", style: "group-cardio", name: "*Papaverine(30 Mg/MI) Inj", defStock: 0, subBox: "" },
+        
+        { cat: "Antiemetics", style: "group-antiemetics", name: "Nausil (Plasil) 10 mg/2 ml inj", defStock: 1, subBox: "" },
+        { cat: "Antiemetics", style: "group-antiemetics", name: "Metoclopramide(10mg/2ml)", defStock: 1, subBox: "box2" },
+        { cat: "Antiemetics", style: "group-antiemetics", name: "Zetron 8 mg/4 ml inj.", defStock: 1, subBox: "" },
+        { cat: "Antiemetics", style: "group-antiemetics", name: "Ondanzetron 8 Mg Inj", defStock: 1, subBox: "box3" },
+        
+        { cat: "Antibiotics", style: "group-antibiotics", name: "Ampicillin 500 mg", defStock: 0, subBox: "" },
+        { cat: "Antibiotics", style: "group-antibiotics", name: "Cefazolin 1 g (Zefa MH)", defStock: 0, subBox: "" },
+        { cat: "Antibiotics", style: "group-antibiotics", name: "Rocephin IV (Igm)", defStock: 0, subBox: "" },
+        { cat: "Antibiotics", style: "group-antibiotics", name: "Ciprobay 200 mg , 400 mg", defStock: 0, subBox: "" },
+        { cat: "Antibiotics", style: "group-antibiotics", name: "Metrolex 500 mg (Biogyl)", defStock: 0, subBox: "" },
+        { cat: "Antibiotics", style: "group-antibiotics", name: "Dalacin c 600 mg", defStock: 0, subBox: "" },
+        { cat: "Antibiotics", style: "group-antibiotics", name: "Clafolan 1 g", defStock: 0, subBox: "" },
+        { cat: "Antibiotics", style: "group-antibiotics", name: "Augmentin 1.2 g", defStock: 0, subBox: "" },
+        { cat: "Antibiotics", style: "group-antibiotics", name: "Fosmicin 4 g", defStock: 0, subBox: "" },
+        { cat: "Antibiotics", style: "group-antibiotics", name: "Unasyn 3 g", defStock: 0, subBox: "" },
+        { cat: "Antibiotics", style: "group-antibiotics", name: "Vancomycin 500 mg", defStock: 0, subBox: "" },
+        
+        { cat: "Other", style: "group-other", name: "Chlorpheniramine 10mg/ml", defStock: 2, subBox: "box2" },
+        { cat: "Other", style: "group-other", name: "Dexamethasone 5 mg/ml", defStock: 2, subBox: "" },
+        { cat: "Other", style: "group-other", name: "Dexamethasone 5mg/ml", defStock: 2, subBox: "box2" },
+        { cat: "Other", style: "group-other", name: "Methergin", defStock: 0, subBox: "" },
+        { cat: "Other", style: "group-other", name: "Syntocinon(Oxytocin)", defStock: 0, subBox: "" },
+        { cat: "Other", style: "group-other", name: "Duratocin", defStock: 0, subBox: "" },
+        { cat: "Other", style: "group-other", name: "Divomit (Dramamine)", defStock: 0, subBox: "" },
+        { cat: "Other", style: "group-other", name: "Ketolac 30 mg", defStock: 0, subBox: "" },
+        { cat: "Other", style: "group-other", name: "Transamin 50 mg/ml", defStock: 0, subBox: "" },
+        { cat: "Other", style: "group-other", name: "Transamine 50 mg/ml", defStock: 2, subBox: "box3" },
+        
+        { cat: "IV Fluid", style: "group-ivfluid", name: "0.9%NSS 100, 500ml (Viaflex)", defStock: 0, subBox: "" },
+        { cat: "IV Fluid", style: "group-ivfluid", name: "0.9% NSS 100 ml (Piggy bag)", defStock: 0, subBox: "" },
+        { cat: "IV Fluid", style: "group-ivfluid", name: "0.9% NSS 500 ml , 1000 ml", defStock: 0, subBox: "" },
+        { cat: "IV Fluid", style: "group-ivfluid", name: "5%D/W100 ml,500 ml,1000 ml", defStock: 0, subBox: "" },
+        { cat: "IV Fluid", style: "group-ivfluid", name: "5% D/N/2 500 ml , 1000 ml", defStock: 0, subBox: "" },
+        { cat: "IV Fluid", style: "group-ivfluid", name: "R-cetrate 500 ml, 1000 ml", defStock: 0, subBox: "" },
+        { cat: "IV Fluid", style: "group-ivfluid", name: "R-cetrate-51000ml", defStock: 0, subBox: "" },
+        { cat: "IV Fluid", style: "group-ivfluid", name: "LRI 500 ml , 1000 ml", defStock: 0, subBox: "" },
+        { cat: "IV Fluid", style: "group-ivfluid", name: "Voluven 500 ml", defStock: 0, subBox: "" },
+        { cat: "IV Fluid", style: "group-ivfluid", name: "Tetraspan 6% 500 ml", defStock: 0, subBox: "" },
+        { cat: "IV Fluid", style: "group-ivfluid", name: "Albumin5%250ml,20%,25%50ml", defStock: 0, subBox: "" },
+        { cat: "IV Fluid", style: "group-ivfluid", name: "Volulyte 6% 500 ml", defStock: 0, subBox: "" },
+        { cat: "IV Fluid", style: "group-ivfluid", name: "Manitol 20% 250ml", defStock: 0, subBox: "" },
+        { cat: "IV Fluid", style: "group-ivfluid", name: "Sterofundin 1000 ml", defStock: 0, subBox: "" },
+        
+        { cat: "Other Other", style: "group-otherother", name: "Precedex 100 mg/ml", defStock: 0, subBox: "" },
+        { cat: "Other Other", style: "group-otherother", name: "Levophed 4 mg/4ml", defStock: 1, subBox: "box2" },
+        { cat: "Other Other", style: "group-otherother", name: "Trandate 25 mg (Labetalol 1", defStock: 0, subBox: "" },
+        { cat: "Other Other", style: "group-otherother", name: "Berodual Forte Solution", defStock: 0, subBox: "" },
+        { cat: "Other Other", style: "group-otherother", name: "Ventolin Nebules (1 Tube)", defStock: 0, subBox: "" },
+        { cat: "Other Other", style: "group-otherother", name: "Nimotop infusion", defStock: 0, subBox: "" },
+        { cat: "Other Other", style: "group-otherother", name: "Solu cortef (Hydrocortisone)", defStock: 0, subBox: "" },
+        { cat: "Other Other", style: "group-otherother", name: "Humulin-R (แบ่งขาย) units", defStock: 0, subBox: "" },
+        { cat: "Other Other", style: "group-otherother", name: "Vidisic Eye Gel 10 Gm", defStock: 0, subBox: "" },
+        { cat: "Other Other", style: "group-otherother", name: "•Dopamine Premixed 200 mg", defStock: 0, subBox: "" },
+        { cat: "Other Other", style: "group-otherother", name: "*Solu-Medrol 1 gm in).", defStock: 0, subBox: "" },
+        { cat: "Other Other", style: "group-otherother", name: "*Cardioplegia (20 MI) Inj", defStock: 0, subBox: "" },
+        { cat: "Other Other", style: "group-otherother", name: "*Heparin (Leo) In)", defStock: 0, subBox: "" }
+    ];
+
+    let recordedLogs = [];
+
+    window.onload = function() {
+        document.getElementById('pDate').valueAsDate = new Date();
+        document.getElementById('pLastUpdate').valueAsDate = new Date();
+        
+        setInterval(() => {
+            if(!document.getElementById('pTime').matches(':focus')) {
+                const d = new Date();
+                document.getElementById('pTime').value = d.toTimeString().split(' ')[0];
+            }
+        }, 1000);
+
+        filterDrugMenu();
+    };
+
+    function filterDrugMenu() {
+        const selectedFilter = document.getElementById('subBoxFilter').value;
+        const selector = document.getElementById('drugSelect');
+        selector.innerHTML = '<option value="">-- Choose Medication Line --</option>';
+
+        let categorized = {};
+        MasterDrugData.forEach(item => {
+            if (selectedFilter === "ALL" || item.subBox === selectedFilter) {
+                if (!categorized[item.cat]) categorized[item.cat] = [];
+                categorized[item.cat].push(item);
+            }
+        });
+
+        for (const catName in categorized) {
+            const group = document.createElement('optgroup');
+            group.label = catName;
+            categorized[catName].forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m.name;
+                opt.text = m.name;
+                opt.className = m.style;
+                group.appendChild(opt);
+            });
+            selector.appendChild(group);
+        }
+    }
+
+    function verifyExpirationRisk(dateVal) {
+        if (!dateVal) return { label: '<span class="badge badge-success">No Date</span>', alert: false };
+        const dTarget = new Date(dateVal);
+        const dToday = new Date();
+        const diff = Math.ceil((dTarget.getTime() - dToday.getTime()) / (1000 * 3600 * 24));
+
+        if (diff <= 0) return { label: '<span class="badge badge-danger">Expired</span>', alert: true };
+        if (diff <= 90) return { label: `<span class="badge badge-warning">Alert (${diff} Days left)</span>`, alert: true };
+        return { label: '<span class="badge badge-success">Valid</span>', alert: false };
+    }
+
+    function addDrugLog() {
+        const mName = document.getElementById('drugSelect').value;
+        const qty = parseInt(document.getElementById('useQty').value) || 0;
+        const exp = document.getElementById('expDate').value;
+        const timestamp = document.getElementById('pTime').value;
+
+        if (!mName) { alert('Please select a medication entry first.'); return; }
+        if (!exp) { alert('Please provide the medication expiration date via calendar element.'); return; }
+
+        recordedLogs.push({
+            id: Date.now(),
+            name: mName,
+            qty: qty,
+            exp: exp,
+            time: timestamp
+        });
+
+        refreshLiveUITable();
+    }
+
+    function dropLogItem(id) {
+        recordedLogs = recordedLogs.filter(e => e.id !== id);
+        refreshLiveUITable();
+    }
+
+    function refreshLiveUITable() {
+        const body = document.querySelector('#liveStreamTable tbody');
+        body.innerHTML = '';
+        if (recordedLogs.length === 0) {
+            body.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#7f8c8d;">No medication entry recorded yet.</td></tr>';
+            return;
+        }
+
+        recordedLogs.forEach(log => {
+            const meta = MasterDrugData.find(d => d.name === log.name);
+            const rStat = verifyExpirationRisk(log.exp);
+            const tr = document.createElement('tr');
+            if(meta) tr.className = meta.style;
+            tr.innerHTML = `
+                <td style="text-align:center;">🕒 ${log.time}</td>
+                <td><b>${meta ? meta.cat : 'Unclassified'}</b></td>
+                <td>${log.name}</td>
+                <td style="text-align:center;"><b>${log.qty}</b></td>
+                <td style="text-align:center;">📅 ${log.exp}</td>
+                <td style="text-align:center;">${rStat.label}</td>
+                <td style="text-align:center;"><button class="btn" style="background:var(--danger); padding:4px 8px;" onclick="dropLogItem(${log.id})">Delete</button></td>
+            `;
+            body.appendChild(tr);
+        });
+    }
+
+    function formatPrintDate(dStr) {
+        if(!dStr) return '...................';
+        const parts = dStr.split('-');
+        return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+
+    function executePrint(targetLayout) {
+        const nm = document.getElementById('pName').value || '..............................................';
+        const hn = document.getElementById('pHN').value || '............................';
+        const wd = document.getElementById('pWard').value;
+        const dt = formatPrintDate(document.getElementById('pDate').value);
+        const tm = document.getElementById('pTime').value || '............';
+        const dc = document.getElementById('pDoctor').value || '............................................';
+        const op = document.getElementById('pOperation').value || '.......................................................................................';
+        const kit = document.getElementById('pKitNo').value;
+        const s1 = document.getElementById('pSealOut').value || '............................';
+        const s2 = document.getElementById('pSealIn').value || '............................';
+        const lu = formatPrintDate(document.getElementById('pLastUpdate').value);
+        const ad = document.getElementById('pAddOn').value || '..................................................................................................................';
+        const pr = document.getElementById('staffPrep').value || '............................';
+        const rc = document.getElementById('staffRec').value || '............................';
+
+        if (targetLayout === 'A4-NURSE') {
+            document.body.className = "mode-a4";
+            document.getElementById('out-a4-lastupdate').innerText = lu;
+            document.getElementById('out-a4-kitno-header').innerText = kit;
+            document.getElementById('out-a4-pname').innerText = nm;
+            document.getElementById('out-a4-hn').innerText = hn;
+            document.getElementById('out-a4-ward').innerText = wd;
+            document.getElementById('out-a4-date').innerText = dt;
+            document.getElementById('out-a4-time').innerText = tm;
+            document.getElementById('out-a4-doc').innerText = dc;
+            document.getElementById('out-a4-op').innerText = op;
+            document.getElementById('out-a4-addon').innerText = ad;
+            document.getElementById('out-a4-prep').innerText = pr;
+            document.getElementById('out-a4-rec').innerText = rc;
+            document.getElementById('out-a4-seal1').innerText = s1;
+            document.getElementById('out-a4-seal2').innerText = s2;
+
+            const tbody = document.querySelector('#table-a4-body tbody');
+            tbody.innerHTML = '';
+            
+            let leftIdx = 0;
+            let rightIdx = Math.ceil(MasterDrugData.length / 2);
+            
+            while(leftIdx < Math.ceil(MasterDrugData.length / 2)) {
+                const tr = document.createElement('tr');
+                const leftItem = MasterDrugData[leftIdx];
+                const rightItem = MasterDrugData[rightIdx];
+
+                let lUsed = recordedLogs.filter(x => x.name === leftItem.name).reduce((s, c) => s + c.qty, 0);
+                let lBal = leftItem.defStock > 0 ? Math.max(0, leftItem.defStock - lUsed) : '';
+                
+                let rUsed = rightItem ? recordedLogs.filter(x => x.name === rightItem.name).reduce((s, c) => s + c.qty, 0) : 0;
+                let rBal = (rightItem && rightItem.defStock > 0) ? Math.max(0, rightItem.defStock - rUsed) : '';
+
+                tr.innerHTML = `
+                    <td>${leftItem.name}</td>
+                    <td style="text-align:center;">${leftItem.defStock || ''}</td>
+                    <td style="text-align:center; font-weight:bold;">${lUsed || ''}</td>
+                    <td style="text-align:center;">${lBal}</td>
+                    <td>${rightItem ? rightItem.name : ''}</td>
+                    <td style="text-align:center;">${rightItem ? (rightItem.defStock || '') : ''}</td>
+                    <td style="text-align:center; font-weight:bold;">${rightItem ? (rUsed || '') : ''}</td>
+                    <td style="text-align:center;">${rightItem ? rBal : ''}</td>
+                `;
+                tbody.appendChild(tr);
+                leftIdx++;
+                rightIdx++;
+            }
+
+        } else if (targetLayout === 'A5-NURSE') {
+            document.body.className = "mode-a5-nurse";
+            document.getElementById('out-a5n-pname').innerText = nm;
+            document.getElementById('out-a5n-hn').innerText = hn;
+            document.getElementById('out-a5n-ward').innerText = wd;
+            document.getElementById('out-a5n-date').innerText = dt;
+            document.getElementById('out-a5n-time').innerText = tm;
+            document.getElementById('out-a5n-doc').innerText = dc;
+            document.getElementById('out-a5n-op').innerText = op;
+            document.getElementById('out-a5n-kitno').innerText = kit;
+            document.getElementById('out-a5n-addon').innerText = ad;
+            document.getElementById('out-a5n-prep').innerText = pr;
+            document.getElementById('out-a5n-rec').innerText = rc;
+            document.getElementById('out-a5n-seal1').innerText = s1;
+
+            const tbody = document.querySelector('#table-a5n-body tbody');
+            tbody.innerHTML = '';
+            
+            if(recordedLogs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No medications utilized in this event stream.</td></tr>';
+            } else {
+                recordedLogs.forEach(log => {
+                    const matched = MasterDrugData.find(d => d.name === log.name);
+                    const tr = document.createElement('tr');
+                    let bal = matched && matched.defStock > 0 ? Math.max(0, matched.defStock - log.qty) : '';
+                    tr.innerHTML = `
+                        <td>${log.name} (at ${log.time})</td>
+                        <td style="text-align:center;">${matched ? (matched.defStock || '') : ''}</td>
+                        <td style="text-align:center; font-weight:bold;">${log.qty}</td>
+                        <td style="text-align:center;">${bal}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+
+        } else if (targetLayout === 'A5-PHARMA') {
+            document.body.className = "mode-a5-pharma";
+            document.getElementById('out-a5p-lastupdate').innerText = lu;
+            document.getElementById('out-a5p-kitno').innerText = kit;
+
+            const tbody = document.querySelector('#table-a5p-body tbody');
+            tbody.innerHTML = '';
+
+            // CRITICAL CHANGE: Only compile from items that have been actively logged/selected
+            if (recordedLogs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding: 20px; font-style: italic; color: #555;">No entries selected. List is empty.</td></tr>';
+            } else {
+                // Group logged items to sum quantities of identical medications
+                let uniqueSelections = {};
+                recordedLogs.forEach(log => {
+                    if (!uniqueSelections[log.name]) {
+                        uniqueSelections[log.name] = {
+                            qty: 0,
+                            exp: log.exp
+                        };
+                    }
+                    uniqueSelections[log.name].qty += log.qty;
+                    uniqueSelections[log.name].exp = log.exp; // Keep latest selected date
+                });
+
+                // Display selected items matching the image 2 profile structure
+                for (const drugName in uniqueSelections) {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><b>${drugName}</b></td>
+                        <td style="text-align:center; font-weight:bold; font-size: 14px;">${uniqueSelections[drugName].qty}</td>
+                        <td style="text-align:center; font-style: italic;">${formatPrintDate(uniqueSelections[drugName].exp)}</td>
+                    `;
+                    tbody.appendChild(tr);
+                }
+            }
+        }
+
+        setTimeout(() => { window.print(); }, 300);
+    }
+</script>
+
+</body>
+</html>
