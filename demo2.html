@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Anesthetic Kit Management — Box View (Demo 2)</title>
+<style>
+    :root {
+        --primary: #18394a;
+        --accent: #1f6f9f;
+        --ok: #16a085;
+        --warning: #f39c12;
+        --danger: #c0392b;
+        --theme1: #c0392b;
+        --theme1-bg: #fdecea;
+        --theme2: #1f6f9f;
+        --theme2-bg: #eaf4fb;
+        --theme3: #16a085;
+        --theme3-bg: #e9f9f5;
+    }
+
+    * { box-sizing: border-box; }
+
+    body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; background: #f3f5f7; color: #23343d; }
+
+    .no-print-area { max-width: 1300px; margin: 24px auto 60px auto; padding: 0 16px; }
+
+    .page-shell { background: #ffffff; border: 1px solid #dfe5ea; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.06); overflow: hidden; }
+
+    .page-header { display: flex; justify-content: space-between; align-items: center; padding: 22px 28px; background: linear-gradient(90deg, #0f4c81 0%, #1f6f9f 100%); color: white; }
+    .page-header h1 { margin: 0; font-size: 22px; }
+    .page-header p { margin: 6px 0 0; opacity: .9; font-size: 13px; }
+    .header-badge { background: rgba(255,255,255,0.16); padding: 8px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+
+    .content-body { padding: 22px 24px 24px 24px; }
+
+    .section-card { background: #ffffff; border: 1px solid #e3e8ec; border-left: 4px solid var(--accent); border-radius: 10px; padding: 16px 18px; margin-bottom: 18px; }
+    h2, h3 { color: var(--primary); margin-top: 0; }
+    .section-card h3 { margin-bottom: 4px; font-size: 17px; }
+    .section-note { font-size: 12.5px; color: #6b7680; margin: 0 0 12px 0; }
+
+    .grid-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; align-items: end; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    label { font-weight: 600; font-size: 13px; color: #55656f; }
+    input, select, textarea { padding: 9px 11px; border: 1px solid #cdd6dc; border-radius: 8px; font-size: 14px; background: white; color: #23343d; width: 100%; }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(31,111,159,0.12); }
+    textarea { min-height: 60px; resize: vertical; }
+
+    /* ---------------- Alert banner ---------------- */
+    #liveAlertBar { display: none; align-items: center; gap: 10px; background: #fdecea; border: 1px solid var(--danger); color: #7a1f14; border-radius: 10px; padding: 12px 16px; margin-bottom: 18px; font-weight: 700; font-size: 14px; position: sticky; top: 10px; z-index: 20; }
+    #liveAlertBar .count { background: var(--danger); color: white; border-radius: 999px; padding: 2px 10px; font-size: 13px; }
+
+    #draftSavedNote { font-size: 12px; color: #6b7680; margin: 4px 0 14px 2px; }
+    #draftSavedNote b { color: var(--ok); }
+
+    /* ---------------- Kit boxes (preparing step) ---------------- */
+    .kit-box { border-radius: 12px; overflow: hidden; margin-bottom: 18px; border: 1px solid #dfe5ea; }
+    .kit-box-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; color: white; font-weight: 700; font-size: 14px; }
+    .kit-box.theme1 .kit-box-header { background: var(--theme1); }
+    .kit-box.theme2 .kit-box-header { background: var(--theme2); }
+    .kit-box.theme3 .kit-box-header { background: var(--theme3); }
+    .kit-box-header .badge-count { background: rgba(255,255,255,0.25); border-radius: 999px; padding: 3px 10px; font-size: 12px; }
+
+    .compartment-grid { display: grid; gap: 8px; padding: 10px; overflow-x: auto; }
+    .kit-box.theme1 .compartment-grid { background: var(--theme1-bg); }
+    .kit-box.theme2 .compartment-grid { background: var(--theme2-bg); }
+    .kit-box.theme3 .compartment-grid { background: var(--theme3-bg); }
+
+    .compartment { background: white; border: 1px solid #d7dee3; border-radius: 8px; padding: 8px; min-width: 150px; display: flex; flex-direction: column; gap: 6px; transition: box-shadow .15s, border-color .15s; }
+    .compartment.has-error { border-color: var(--danger); box-shadow: 0 0 0 3px rgba(192,57,43,0.15); }
+    .compartment.empty { background: repeating-linear-gradient(45deg, #f4f6f7, #f4f6f7 6px, #eceff1 6px, #eceff1 12px); border-style: dashed; align-items: center; justify-content: center; color: #9aa5ab; font-size: 12px; }
+
+    .label-chip { font-size: 11.5px; font-weight: 700; padding: 4px 6px; border-radius: 5px; text-align: center; line-height: 1.25; min-height: 30px; display: flex; align-items: center; justify-content: center; }
+    .kit-box.theme1 .label-chip { background: #fff3cd; color: #7a1f14; border: 1px solid #f5c6cb; }
+    .kit-box.theme2 .label-chip { background: #d6ecf7; color: #0f4c81; border: 1px solid #b9dcef; }
+    .kit-box.theme3 .label-chip { background: #d3f2ea; color: #0e6b57; border: 1px solid #b7e6d8; }
+
+    .field-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; font-size: 12px; }
+    .field-row span.f-label { color: #6b7680; font-weight: 600; white-space: nowrap; }
+    .field-row input { padding: 5px 6px; font-size: 12.5px; width: 92px; }
+    .field-row input[readonly] { background: #f1f3f4; color: #556; }
+    .balance-value { font-weight: 800; font-size: 13px; }
+    .balance-negative { color: var(--danger); }
+    .error-msg { color: var(--danger); font-size: 11px; font-weight: 600; min-height: 14px; }
+
+    /* ---------------- Loose (non-boxed) category tables ---------------- */
+    .loose-cat-block { margin-bottom: 14px; }
+    .loose-cat-title { font-size: 13.5px; font-weight: 700; color: var(--primary); background: #eef2f7; padding: 6px 10px; border-radius: 6px 6px 0 0; }
+    table.loose-table { width: 100%; border-collapse: collapse; }
+    table.loose-table th, table.loose-table td { border: 1px solid #e3e8ec; padding: 6px 8px; font-size: 13px; text-align: center; }
+    table.loose-table th { background: #f7f9fa; }
+    table.loose-table td.desc { text-align: left; width: 34%; }
+    table.loose-table td.err-cell { text-align: left; color: var(--danger); font-size: 11.5px; font-weight: 600; }
+    table.loose-table input { width: 90px; padding: 5px 6px; font-size: 12.5px; }
+    table.loose-table tr.row-error td { background: #fdecea; }
+
+    /* ---------------- Buttons ---------------- */
+    .btn-group { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; align-items: center; }
+    .btn { padding: 11px 18px; border: none; border-radius: 999px; cursor: pointer; font-weight: 700; color: white; font-size: 14px; }
+    .btn-save { background-color: #16a085; }
+    .btn-a4 { background-color: #2980b9; }
+    .btn-a5 { background-color: #8e44ad; }
+    .btn-clear { background-color: #7f8c8d; }
+    .btn:hover { opacity: .9; }
+    .btn-small { padding: 6px 12px; font-size: 12px; border-radius: 6px; }
+
+    /* ---------------- History ---------------- */
+    table.history-table { width: 100%; border-collapse: collapse; }
+    table.history-table th, table.history-table td { border: 1px solid #e3e8ec; padding: 7px 9px; font-size: 13px; text-align: center; }
+    table.history-table th { background: #f7f9fa; }
+    .hist-empty { text-align: center; color: #8b98a1; padding: 14px; font-size: 13px; }
+
+    /* ---------------- Modal ---------------- */
+    .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.55); }
+    .modal-content { background: white; margin: 6% auto; padding: 24px; width: min(640px, 92%); border-radius: 12px; max-height: 82vh; overflow-y: auto; }
+    .modal-content h2 { color: var(--danger); font-size: 18px; }
+    .modal-content ul { text-align: left; padding-left: 20px; }
+    .modal-content li { margin-bottom: 6px; font-size: 13.5px; }
+    .close-btn { background: var(--primary); color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; margin-top: 16px; font-weight: 700; }
+
+    /* ---------------- Print layouts: must mirror the paper forms exactly ---------------- */
+    #print-a4, #print-a5 { display: none; }
+
+    @media print {
+        .no-print-area { display: none !important; }
+        body { background: white; margin: 0; padding: 0; color: #000; font-family: 'Times New Roman', Times, serif; }
+
+        body.mode-a4 #print-a4 { display: block !important; }
+        body.mode-a5 #print-a5 { display: block !important; }
+
+        @page a4-page { size: A4 portrait; margin: 8mm; }
+        @page a5-page { size: A5 portrait; margin: 5mm; }
+        #print-a4 { page: a4-page; }
+        #print-a5 { page: a5-page; }
+
+        .print-title { text-align: center; font-size: 16px; font-weight: bold; margin-bottom: 4px; }
+        .print-meta-line { font-size: 12px; margin-bottom: 3px; }
+        .dotted-line { border-bottom: 1px dotted #000; display: inline-block; min-width: 80px; padding: 0 4px; }
+
+        .print-columns { display: flex; gap: 6px; margin-top: 6px; }
+        .print-columns > div { flex: 1; }
+
+        table.print-table { width: 100%; border-collapse: collapse; margin-bottom: 4px; }
+        table.print-table th, table.print-table td { border: 1px solid #000 !important; padding: 2px 4px; font-size: 10.5px; color: black; }
+        table.print-table th { background-color: #eee !important; text-align: center; }
+        .cat-row-header-print { background-color: #ddd !important; font-weight: bold; text-align: left !important; padding-left: 4px; }
+
+        .footer-signature { margin-top: 14px; display: flex; justify-content: space-between; font-size: 12px; font-weight: bold; }
+        .footer-signature-a5 { margin-top: 16px; font-size: 12px; font-weight: bold; line-height: 2; }
+    }
+</style>
+</head>
+<body>
+
+<!-- ============================= WEB INTERFACE ============================= -->
+<div class="no-print-area">
+    <div id="liveAlertBar"><span>⚠️</span><span id="liveAlertText">issues found</span><span class="count" id="liveAlertCount">0</span></div>
+
+    <div class="page-shell">
+        <div class="page-header">
+            <div>
+                <h1>🧰 Anesthetic Kit Management — Box View</h1>
+                <p>On-screen entry mirrors the physical kit boxes; printed forms stay identical to the paper originals</p>
+            </div>
+            <div class="header-badge">Demo 2</div>
+        </div>
+
+        <div class="content-body">
+
+            <div class="section-card">
+                <h3>1. Case Details & Metadata</h3>
+                <p class="section-note">Fields match the paper Anesthesia Charging Record header exactly.</p>
+                <div class="grid-form">
+                    <div class="form-group"><label>Patient Name: *</label><input type="text" id="pName" placeholder="Enter patient name"></div>
+                    <div class="form-group"><label>HN: *</label><input type="text" id="pHN" placeholder="Enter HN"></div>
+                    <div class="form-group">
+                        <label>Ward:</label>
+                        <select id="pWard">
+                            <option value="ICU">ICU</option><option value="CCU">CCU</option>
+                            <option value="Ward 4">Ward 4</option><option value="Ward 5">Ward 5</option>
+                            <option value="Ward 6">Ward 6</option><option value="Ward 7">Ward 7</option>
+                            <option value="Ward 8">Ward 8</option><option value="Ward 9">Ward 9</option>
+                        </select>
+                    </div>
+                    <div class="form-group"><label>Date:</label><input type="date" id="pDate"></div>
+                    <div class="form-group"><label>Time (live):</label><input type="time" id="pTime" step="1"></div>
+                    <div class="form-group"><label>Doctor:</label><input type="text" id="pDoctor" placeholder="Enter doctor name"></div>
+                    <div class="form-group"><label>Operation:</label><input type="text" id="pOperation" placeholder="Enter operation name"></div>
+                    <div class="form-group">
+                        <label>Anesthesia Kit No. (BOX):</label>
+                        <select id="pKitNo" onchange="updateKitNoDisplay()"></select>
+                    </div>
+                    <div class="form-group"><label>Theater No.:</label><input type="text" id="pTheaterNo" placeholder="Enter theater no."></div>
+                    <div class="form-group"><label>Seal No.1 OUT:</label><input type="text" id="pSealOut" placeholder="Seal No.1 Out"></div>
+                    <div class="form-group"><label>Seal No.2 IN:</label><input type="text" id="pSealIn" placeholder="Seal No.2 In"></div>
+                    <div class="form-group"><label style="color:var(--danger)">Last Update Document:</label><input type="date" id="pLastUpdate"></div>
+                </div>
+                <div class="form-group" style="margin-top: 14px;">
+                    <label>Dispense add on medicine:</label>
+                    <textarea id="pAddOn" rows="2" placeholder="Enter details for add on medicine..."></textarea>
+                </div>
+            </div>
+
+            <div class="section-card">
+                <h3>2. Preparing Step — Kit Sub-Boxes</h3>
+                <p class="section-note">These are the physical labeled containers (high-alert box + 2 multi-compartment boxes). Read top-down, left to right, exactly as arranged in the kit. Grey readonly "Prep" is the standard kit content; an editable blank "Prep" means it's a bulk/PRN item — enter the quantity actually prepared before recording usage.</p>
+                <div id="boxesContainer"></div>
+            </div>
+
+            <div class="section-card">
+                <h3>3. Other Kit Items (Not in a Labeled Sub-Box)</h3>
+                <p class="section-note">Remaining kit contents, grouped by category exactly as on the paper Charging Record.</p>
+                <div id="looseContainer"></div>
+            </div>
+
+            <div class="section-card">
+                <h3>4. Staff Signatures</h3>
+                <div class="grid-form">
+                    <div class="form-group"><label>Prepared By:</label><input type="text" id="staffPrep" placeholder="Pharmacist / Staff name"></div>
+                    <div class="form-group"><label>Received By:</label><input type="text" id="staffRec" placeholder="Nurse name"></div>
+                </div>
+            </div>
+
+            <div class="btn-group">
+                <button class="btn btn-save" onclick="handlePrint('SAVE')">💾 Save to History Log</button>
+                <button class="btn btn-a4" onclick="handlePrint('A4')">🖨️ Print A4 — Charging Record</button>
+                <button class="btn btn-a5" onclick="handlePrint('A5')">🖨️ Print A5 — Kit Prep Label</button>
+                <button class="btn btn-clear" onclick="clearForm()">🧹 Clear Form</button>
+            </div>
+            <div id="draftSavedNote"></div>
+
+            <div class="section-card" style="margin-top: 8px;">
+                <h3>5. History Log</h3>
+                <p class="section-note">Stored in this browser only (not shared across devices/staff) — for tracking and reviewing past kit records.</p>
+                <table class="history-table">
+                    <thead><tr><th>Saved</th><th>Action</th><th>Kit No</th><th>Patient</th><th>HN</th><th>Items Used</th><th>View</th><th>Delete</th></tr></thead>
+                    <tbody id="historyBody"></tbody>
+                </table>
+                <div class="btn-group" style="margin-top: 12px;">
+                    <button class="btn btn-clear btn-small" onclick="clearHistory()">🗑️ Clear All History</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Blocking validation modal -->
+<div id="issueModal" class="modal">
+    <div class="modal-content">
+        <h2>⚠️ Please fix the following before continuing</h2>
+        <ul id="issueList"></ul>
+        <button class="close-btn" onclick="document.getElementById('issueModal').style.display='none'">Close</button>
+    </div>
+</div>
+
+<!-- History entry view modal -->
+<div id="historyModal" class="modal">
+    <div class="modal-content">
+        <h2 style="color:var(--primary);">📋 Record Detail</h2>
+        <div id="historyDetail"></div>
+        <button class="close-btn" onclick="document.getElementById('historyModal').style.display='none'">Close</button>
+    </div>
+</div>
+
+
+<!-- ============================= PRINT: A4 — ANESTHESIA CHARGING RECORD (paper-identical) ============================= -->
+<div id="print-a4">
+    <div class="print-title">Anesthesia Charging Record</div>
+    <div class="print-meta-line">Patient Name<span class="dotted-line" id="out4-pname" style="min-width:150px;"></span>HN<span class="dotted-line" id="out4-hn"></span>Ward<span class="dotted-line" id="out4-ward"></span>Date<span class="dotted-line" id="out4-date"></span>Time<span class="dotted-line" id="out4-time"></span></div>
+    <div class="print-meta-line">Doctor<span class="dotted-line" id="out4-doc" style="min-width:150px;"></span>Operation<span class="dotted-line" id="out4-op" style="min-width:200px;"></span>BOX<span class="dotted-line" id="out4-kitno"></span>Theater No.<span class="dotted-line" id="out4-theater"></span></div>
+
+    <div class="print-columns" id="out4-columns"></div>
+
+    <div class="print-meta-line" style="margin-top:6px;">Dispense add on medicine: <span class="dotted-line" id="out4-addon" style="min-width:60%;"></span></div>
+    <div class="footer-signature">
+        <div>Prepared by: <span class="dotted-line" id="out4-prep" style="min-width:120px;"></span></div>
+        <div>Received by: <span class="dotted-line" id="out4-rec" style="min-width:120px;"></span></div>
+        <div>Seal No.1 (OUT): <span class="dotted-line" id="out4-seal1"></span></div>
+        <div>Seal No.2 (IN): <span class="dotted-line" id="out4-seal2"></span></div>
+    </div>
+    <div class="print-meta-line" style="margin-top:6px;">Last update: <span id="out4-lastupdate"></span></div>
+</div>
+
+<!-- ============================= PRINT: A5 — KIT PREPARATION LABEL (paper-identical) ============================= -->
+<div id="print-a5">
+    <div style="text-align:right; font-size:11px; font-weight:bold;">Last update: <span id="out5-lastupdate"></span></div>
+    <div class="print-title">Anesthesia Kit No. <span id="out5-kitno"></span></div>
+
+    <div class="print-columns" id="out5-columns"></div>
+
+    <div class="footer-signature-a5">
+        Check By: .................................................... &nbsp;&nbsp;&nbsp; Date: <span class="dotted-line" id="out5-date"></span> &nbsp;&nbsp;&nbsp; Due Date: ....................................................
+    </div>
+</div>
+
+
+<script>
+    // ================= Master drug list — categories/order match the paper Charging Record exactly =================
+    // box: 'box1' | 'box2' | 'box3' | null (null = loose item, tracked in the category tables instead of a sub-box)
+    const MASTER = [
+        // Intravenous anesthesia
+        { id: 'diprivan', cat: 'Intravenous anesthesia', name: 'Diprivan 20 ml inj.', prep: 1, box: null },
+        { id: 'anepol', cat: 'Intravenous anesthesia', name: 'Anepol 120 mg/12 ml', prep: 1, box: null },
+        { id: 'fresofol20', cat: 'Intravenous anesthesia', name: 'Fresofol 1% MCT/LCT inj. 20 ml', prep: 1, box: null },
+        { id: 'fresofol50', cat: 'Intravenous anesthesia', name: 'Fresofol 1% MCT/LCT inj. 50 ml', prep: 1, box: null },
+        { id: 'etomidate', cat: 'Intravenous anesthesia', name: 'Etomidate-Lipuro 10 ml', prep: 1, box: null },
+        { id: 'midazolam', cat: 'Intravenous anesthesia', name: 'Midazolam 5 mg/ml inj.', prep: 2, box: 'box1' },
+        { id: 'valium', cat: 'Intravenous anesthesia', name: 'Valium 10 mg (Diazepam) inj.', prep: 1, box: 'box2' },
+        { id: 'ketamine', cat: 'Intravenous anesthesia', name: 'Ketamine (50 mg/ml) 10 ml vial', prep: 1, box: null },
+
+        // Muscle Relaxant
+        { id: 'succinyl', cat: 'Muscle Relaxant', name: 'Succinyl 100 mg/2ml inj', prep: 1, box: null },
+        { id: 'esmeron', cat: 'Muscle Relaxant', name: 'Esmeron 50 mg', prep: 1, box: null },
+        { id: 'tracrium25', cat: 'Muscle Relaxant', name: 'Tracrium inj 25 mg', prep: 1, box: null },
+        { id: 'tracrium50', cat: 'Muscle Relaxant', name: 'Tracrium inj 50 mg', prep: 1, box: null },
+        { id: 'nimbex', cat: 'Muscle Relaxant', name: 'Nimbex 10 mg/5ml', prep: 2, box: null },
+
+        // Narcotics/Analgesics
+        { id: 'morphine', cat: 'Narcotics/Analgesics', name: 'Morphine 10 mg/ml inj', prep: 2, box: 'box1' },
+        { id: 'pethidine', cat: 'Narcotics/Analgesics', name: 'Pethidine 50 mg/ml inj', prep: 2, box: 'box1' },
+        { id: 'fentanyl', cat: 'Narcotics/Analgesics', name: 'Fentanyl 100 mcg/2ml inj.', prep: 2, box: 'box1' },
+        { id: 'dynastat', cat: 'Narcotics/Analgesics', name: 'Dynastat 40 mg inj.', prep: 1, box: 'box2' },
+
+        // Reversal Agent
+        { id: 'atropine', cat: 'Reversal Agent', name: 'Atropine 0.6 mg/ml inj.', prep: 4, box: 'box2' },
+        { id: 'prostigmin', cat: 'Reversal Agent', name: 'Prostigmin 2.5 mg/ml (Neostigmine) inj.', prep: 2, box: 'box2' },
+        { id: 'glycop', cat: 'Reversal Agent', name: 'Glyco-P 0.2 mg/ml inj.', prep: 2, box: 'box2' },
+        { id: 'narcan', cat: 'Reversal Agent', name: 'Narcan 0.4 mg/ml (Naloxone) inj.', prep: 1, box: 'box3' },
+        { id: 'bridion', cat: 'Reversal Agent', name: 'Bridion 200 mg/2ml (Sugammadex)', prep: 0, box: null },
+        { id: 'protamine', cat: 'Reversal Agent', name: '*Protamine Sulphate 10 mg/ml', prep: 0, box: null },
+
+        // Inhalation Anesthetics
+        { id: 'sevoflurane', cat: 'Inhalation. Anesthetics', name: 'Sevoflurane (hr)', prep: 0, box: null },
+        { id: 'desflurane', cat: 'Inhalation. Anesthetics', name: 'Desflurane (hr)', prep: 0, box: null },
+        { id: 'isoflurane', cat: 'Inhalation. Anesthetics', name: 'Isoflurane (hr)', prep: 0, box: null },
+
+        // Local Anesthesia
+        { id: 'xylocaine_adr', cat: 'Local Anesthesia', name: 'Xylocaine c ADR 1%, 2%', prep: 0, box: null },
+        { id: 'xylocaine_noadr', cat: 'Local Anesthesia', name: 'Xylocaine without ADR 1%, 2%', prep: 0, box: null },
+        { id: 'marcaine1020', cat: 'Local Anesthesia', name: 'Marcaine 0.5% 10 ml, 20 ml', prep: 0, box: null },
+        { id: 'marcaine_heavy', cat: 'Local Anesthesia', name: 'Marcaine 0.5% Spinal (Heavy)', prep: 0, box: null },
+        { id: 'marcaine_isobaric', cat: 'Local Anesthesia', name: 'Marcaine 0.5% Spinal (Isobaric)', prep: 0, box: null },
+        { id: 'chirocaine', cat: 'Local Anesthesia', name: 'Chirocaine 10 ml', prep: 0, box: null },
+        { id: 'lidocain', cat: 'Local Anesthesia', name: 'Lidocain inj c ADR 1% 10ml', prep: 0, box: null },
+
+        // Cardiovascular
+        { id: 'adrenaline', cat: 'Cardiovascular', name: 'Adrenaline 1 mg/ml inj.', prep: 1, box: 'box2' },
+        { id: 'cardepine', cat: 'Cardiovascular', name: 'Cardepine 2 mg/2ml inj.', prep: 1, box: 'box2' },
+        { id: 'ephedrine', cat: 'Cardiovascular', name: 'Ephedrine 30 mg inj', prep: 2, box: 'box1' },
+        { id: 'herbesser', cat: 'Cardiovascular', name: 'Herbesser 10 mg inj.', prep: 1, box: 'box3' },
+        { id: 'sodiumbicarb', cat: 'Cardiovascular', name: 'Sodium Bicarbonate 10 ml inj.', prep: 1, box: 'box3' },
+        { id: 'omeprazole', cat: 'Cardiovascular', name: 'Omeprazole 40 mg inj.', prep: 1, box: 'box3' },
+        { id: 'calciumgluc', cat: 'Cardiovascular', name: 'Calcium Gluconate 10 ml inj.', prep: 2, box: 'box3' },
+        { id: 'adalat', cat: 'Cardiovascular', name: 'Adalat (Nifedipine) 5 mg, 10 mg', prep: 0, box: null },
+        { id: 'cordarone', cat: 'Cardiovascular', name: '*Cordarone 150 mg/3ml', prep: 0, box: null },
+        { id: 'ntg', cat: 'Cardiovascular', name: '*N.T.G 25 mg Dext inj 250 ml', prep: 0, box: null },
+        { id: 'papaverine', cat: 'Cardiovascular', name: '*Papaverine (30 mg/ml) inj', prep: 0, box: null },
+
+        // Antiemetics
+        { id: 'metoclopramide', cat: 'Antiemetics', name: 'Metoclopramide 10 mg/2ml inj. (Plasil)', prep: 1, box: 'box2' },
+        { id: 'ondansetron', cat: 'Antiemetics', name: 'Zetron 8 mg/4ml inj. (Ondansetron)', prep: 1, box: 'box3' },
+
+        // Antibiotics
+        { id: 'ampicillin', cat: 'Antibiotics', name: 'Ampicillin 500 mg', prep: 0, box: null },
+        { id: 'cefazolin', cat: 'Antibiotics', name: 'Cefazolin 1 g (Zefa MH)', prep: 0, box: null },
+        { id: 'rocephin', cat: 'Antibiotics', name: 'Rocephin IV (1 gm)', prep: 0, box: null },
+        { id: 'ciprobay', cat: 'Antibiotics', name: 'Ciprobay 200 mg, 400 mg', prep: 0, box: null },
+        { id: 'metrolex', cat: 'Antibiotics', name: 'Metrolex 500 mg (Biogyl)', prep: 0, box: null },
+        { id: 'dalacin', cat: 'Antibiotics', name: 'Dalacin C 600 mg', prep: 0, box: null },
+        { id: 'clafolan', cat: 'Antibiotics', name: 'Clafolan 1 g', prep: 0, box: null },
+        { id: 'augmentin', cat: 'Antibiotics', name: 'Augmentin 1.2 g', prep: 0, box: null },
+        { id: 'fosmicin', cat: 'Antibiotics', name: 'Fosmicin 4 g', prep: 0, box: null },
+        { id: 'unasyn', cat: 'Antibiotics', name: 'Unasyn 3 g', prep: 0, box: null },
+        { id: 'vancomycin', cat: 'Antibiotics', name: 'Vancomycin 500 mg', prep: 0, box: null },
+
+        // Other
+        { id: 'chlorpheniramine', cat: 'Other', name: 'Chlorpheniramine 10 mg/ml inj.', prep: 2, box: 'box2' },
+        { id: 'dexamethasone', cat: 'Other', name: 'Dexamethasone 5 mg/ml inj.', prep: 2, box: 'box2' },
+        { id: 'methergin', cat: 'Other', name: 'Methergin 0.2 mg/ml inj.', prep: 0, box: null },
+        { id: 'syntocinon', cat: 'Other', name: 'Syntocinon (Oxytocin) 10 unit', prep: 0, box: null },
+        { id: 'duratocin', cat: 'Other', name: 'Duratocin 100 mcg/ml inj.', prep: 0, box: null },
+        { id: 'divomit', cat: 'Other', name: 'Divomit (Dramamine)', prep: 0, box: null },
+        { id: 'ketolac', cat: 'Other', name: 'Ketolac 30 mg', prep: 0, box: null },
+        { id: 'transamin', cat: 'Other', name: 'Transamin 50 mg/ml inj.', prep: 2, box: 'box3' },
+
+        // IV Fluid
+        { id: 'nss100_500', cat: 'IV Fluid', name: '0.9% NSS 100, 500 ml (Viaflex)', prep: 0, box: null },
+        { id: 'nss100_piggy', cat: 'IV Fluid', name: '0.9% NSS 100 ml (Piggy bag)', prep: 0, box: null },
+        { id: 'nss500_1000', cat: 'IV Fluid', name: '0.9% NSS 500 ml, 1000 ml', prep: 0, box: null },
+        { id: 'd5w', cat: 'IV Fluid', name: '5% D/W 100, 500, 1000 ml', prep: 0, box: null },
+        { id: 'd5n2', cat: 'IV Fluid', name: '5% D/N/2 500 ml, 1000 ml', prep: 0, box: null },
+        { id: 'rcetrate', cat: 'IV Fluid', name: 'R-cetrate 500 ml, 1000 ml', prep: 0, box: null },
+        { id: 'lri', cat: 'IV Fluid', name: 'LRI 500 ml, 1000 ml', prep: 0, box: null },
+        { id: 'voluven', cat: 'IV Fluid', name: 'Voluven 500 ml', prep: 0, box: null },
+        { id: 'tetraspan', cat: 'IV Fluid', name: 'Tetraspan 6% 500 ml', prep: 0, box: null },
+        { id: 'albumin', cat: 'IV Fluid', name: 'Albumin 5% 250 ml, 20%/25% 50 ml', prep: 0, box: null },
+        { id: 'volulyte', cat: 'IV Fluid', name: 'Volulyte 6% 500 ml', prep: 0, box: null },
+        { id: 'manitol', cat: 'IV Fluid', name: 'Manitol 20% 250 ml', prep: 0, box: null },
+        { id: 'sterofundin', cat: 'IV Fluid', name: 'Sterofundin 1000 ml', prep: 0, box: null },
+
+        // Other Other
+        { id: 'precedex', cat: 'Other Other', name: 'Precedex 100 mcg/ml', prep: 0, box: null },
+        { id: 'levophed', cat: 'Other Other', name: 'Levophed 4 mg/4ml inj.', prep: 1, box: 'box2' },
+        { id: 'trandate', cat: 'Other Other', name: 'Trandate 25 mg (Labetalol)', prep: 0, box: null },
+        { id: 'berodual', cat: 'Other Other', name: 'Berodual Forte Solution', prep: 0, box: null },
+        { id: 'ventolin', cat: 'Other Other', name: 'Ventolin Nebules (1 Tube)', prep: 0, box: null },
+        { id: 'nimotop', cat: 'Other Other', name: 'Nimotop infusion', prep: 0, box: null },
+        { id: 'solucortef', cat: 'Other Other', name: 'Solu Cortef (Hydrocortisone)', prep: 0, box: null },
+        { id: 'humulin', cat: 'Other Other', name: 'Humulin-R (units)', prep: 0, box: null },
+        { id: 'vidisic', cat: 'Other Other', name: 'Vidisic Eye Gel 10 gm', prep: 0, box: null },
+        { id: 'dopamine', cat: 'Other Other', name: '*Dopamine Premixed 200 mg', prep: 0, box: null },
+        { id: 'solumedrol', cat: 'Other Other', name: '*Solu-Medrol 1 gm inj.', prep: 0, box: null },
+        { id: 'cardioplegia', cat: 'Other Other', name: '*Cardioplegia (20 ml) inj.', prep: 0, box: null },
+        { id: 'heparin', cat: 'Other Other', name: '*Heparin (Leo) inj.', prep: 0, box: null }
+    ];
+    const MASTER_BY_ID = {};
+    MASTER.forEach(it => { MASTER_BY_ID[it.id] = it; });
+
+    // Physical sub-box layout — top-down, left-right, exactly as arranged in the containers. null = empty compartment.
+    const BOX_META = {
+        box1: { title: 'Box 1 · Controlled Substance / High Alert Drugs', theme: 'theme1', cols: 5 },
+        box2: { title: 'Box 2', theme: 'theme2', cols: 3 },
+        box3: { title: 'Box 3', theme: 'theme3', cols: 3 }
+    };
+    const BOX_LAYOUT = {
+        box1: ['pethidine', 'morphine', 'fentanyl', 'midazolam', 'ephedrine'],
+        box2: ['adrenaline', 'cardepine', 'glycop', 'valium', 'metoclopramide', 'dynastat', 'levophed', 'chlorpheniramine', 'dexamethasone', null, 'prostigmin', 'atropine'],
+        box3: ['calciumgluc', 'omeprazole', 'sodiumbicarb', null, null, 'ondansetron', 'herbesser', 'transamin', 'narcan']
+    };
+
+    // Column grouping for print — matches the 3-column layout of the real paper Charging Record.
+    const PRINT_COLUMNS = [
+        ['Intravenous anesthesia', 'Muscle Relaxant', 'Narcotics/Analgesics', 'Reversal Agent', 'Inhalation. Anesthetics'],
+        ['Local Anesthesia', 'Cardiovascular', 'Antiemetics', 'Antibiotics'],
+        ['Other', 'IV Fluid', 'Other Other']
+    ];
+
+    const DRAFT_KEY = 'anesKit2_draft_v1';
+    const HISTORY_KEY = 'anesKit2_history_v1';
+    const META_FIELD_IDS = ['pName', 'pHN', 'pWard', 'pDate', 'pTime', 'pDoctor', 'pOperation', 'pKitNo', 'pTheaterNo', 'pSealOut', 'pSealIn', 'pLastUpdate', 'pAddOn', 'staffPrep', 'staffRec'];
+
+    // ---------------- Init ----------------
+    window.onload = function () {
+        document.getElementById('pDate').valueAsDate = new Date();
+        document.getElementById('pLastUpdate').valueAsDate = new Date();
+
+        const kitSel = document.getElementById('pKitNo');
+        for (let i = 1; i <= 10; i++) {
+            const opt = document.createElement('option');
+            opt.value = i; opt.text = `Anesthesia Kit No. ${i}`;
+            if (i === 3) opt.selected = true;
+            kitSel.appendChild(opt);
+        }
+
+        setInterval(() => {
+            if (!document.getElementById('pTime').matches(':focus')) {
+                document.getElementById('pTime').value = new Date().toTimeString().split(' ')[0];
+            }
+        }, 1000);
+
+        renderBoxes();
+        renderLoose();
+        updateKitNoDisplay();
+        loadDraft();
+        renderHistory();
+        refreshAlertBanner();
+
+        document.addEventListener('input', handleAnyInput);
+        document.addEventListener('change', handleAnyInput);
+    };
+
+    function handleAnyInput(e) {
+        if (!e.target.matches('input, select, textarea')) return;
+        if (e.target.id === 'pKitNo') updateKitNoDisplay();
+        refreshAlertBanner();
+        saveDraft();
+    }
+
+    function updateKitNoDisplay() {
+        const kitNo = document.getElementById('pKitNo').value;
+        document.querySelectorAll('.kit-no-live').forEach(el => el.textContent = kitNo);
+    }
+
+    // ---------------- Helpers to read live field values ----------------
+    function getUsed(id) {
+        const el = document.getElementById(`used_${id}`);
+        return el ? (parseInt(el.value) || 0) : 0;
+    }
+    function getExp(id) {
+        const el = document.getElementById(`exp_${id}`);
+        return el ? el.value : '';
+    }
+    function getPrep(item) {
+        if (item.prep > 0) return item.prep;
+        const el = document.getElementById(`prep_${item.id}`);
+        return el ? (parseInt(el.value) || 0) : 0;
+    }
+
+    function fieldsHTML(item) {
+        const prepHTML = item.prep > 0
+            ? `<input type="text" value="${item.prep}" readonly>`
+            : `<input type="number" id="prep_${item.id}" min="0" placeholder="0">`;
+        return `
+            <div class="field-row"><span class="f-label">Prep</span>${prepHTML}</div>
+            <div class="field-row"><span class="f-label">Used</span><input type="number" id="used_${item.id}" min="0" value="0"></div>
+            <div class="field-row"><span class="f-label">Exp</span><input type="date" id="exp_${item.id}"></div>
+            <div class="field-row"><span class="f-label">Balance</span><span class="balance-value" id="bal_${item.id}">${item.prep}</span></div>
+        `;
+    }
+
+    // ---------------- Render: preparing-step sub-boxes ----------------
+    function renderBoxes() {
+        const container = document.getElementById('boxesContainer');
+        container.innerHTML = '';
+
+        Object.keys(BOX_LAYOUT).forEach(boxId => {
+            const meta = BOX_META[boxId];
+            const layout = BOX_LAYOUT[boxId];
+            const itemCount = layout.filter(Boolean).length;
+
+            const wrap = document.createElement('div');
+            wrap.className = `kit-box ${meta.theme}`;
+            wrap.innerHTML = `
+                <div class="kit-box-header">
+                    <span>${meta.title} <span class="kit-no-live"></span></span>
+                    <span class="badge-count">${itemCount} items</span>
+                </div>
+                <div class="compartment-grid" style="grid-template-columns: repeat(${meta.cols}, minmax(150px, 1fr));" id="grid_${boxId}"></div>
+            `;
+            container.appendChild(wrap);
+
+            const grid = wrap.querySelector(`#grid_${boxId}`);
+            layout.forEach(itemId => {
+                if (!itemId) {
+                    const empty = document.createElement('div');
+                    empty.className = 'compartment empty';
+                    empty.textContent = '— empty —';
+                    grid.appendChild(empty);
+                    return;
+                }
+                const item = MASTER_BY_ID[itemId];
+                const cell = document.createElement('div');
+                cell.className = 'compartment';
+                cell.id = `cell_${item.id}`;
+                cell.innerHTML = `
+                    <div class="label-chip">${item.name}</div>
+                    ${fieldsHTML(item)}
+                    <div class="error-msg" id="err_${item.id}"></div>
+                `;
+                grid.appendChild(cell);
+            });
+        });
+    }
+
+    // ---------------- Render: loose (non-boxed) items, grouped by category ----------------
+    function renderLoose() {
+        const container = document.getElementById('looseContainer');
+        container.innerHTML = '';
+
+        const seenCats = [];
+        MASTER.forEach(it => { if (!it.box && !seenCats.includes(it.cat)) seenCats.push(it.cat); });
+
+        seenCats.forEach(cat => {
+            const items = MASTER.filter(it => !it.box && it.cat === cat);
+            const block = document.createElement('div');
+            block.className = 'loose-cat-block';
+            block.innerHTML = `
+                <div class="loose-cat-title">${cat}</div>
+                <table class="loose-table">
+                    <thead><tr><th style="width:34%;">Description</th><th>Prep</th><th>Used</th><th>Exp</th><th>Balance</th></tr></thead>
+                    <tbody id="loose_body_${slug(cat)}"></tbody>
+                </table>
+            `;
+            container.appendChild(block);
+
+            const tbody = block.querySelector(`#loose_body_${slug(cat)}`);
+            items.forEach(item => {
+                const prepHTML = item.prep > 0
+                    ? `<input type="text" value="${item.prep}" readonly>`
+                    : `<input type="number" id="prep_${item.id}" min="0" placeholder="0">`;
+                const tr = document.createElement('tr');
+                tr.id = `row_${item.id}`;
+                tr.innerHTML = `
+                    <td class="desc">${item.name}</td>
+                    <td>${prepHTML}</td>
+                    <td><input type="number" id="used_${item.id}" min="0" value="0"></td>
+                    <td><input type="date" id="exp_${item.id}"></td>
+                    <td><span class="balance-value" id="bal_${item.id}">${item.prep}</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+            // one shared error line per category block
+            const errRow = document.createElement('tr');
+            errRow.innerHTML = `<td colspan="5" class="err-cell" id="looseerr_${slug(cat)}"></td>`;
+            tbody.appendChild(errRow);
+        });
+    }
+
+    function slug(s) { return s.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/(^_|_$)/g, ''); }
+
+    // ---------------- Validation ----------------
+    function validateItem(item) {
+        const used = getUsed(item.id);
+        const exp = getExp(item.id);
+        const prep = getPrep(item);
+        const errors = [];
+
+        if (used < 0) errors.push('Used cannot be negative');
+        if (used > prep) errors.push(`Used (${used}) exceeds Prepared (${prep})`);
+        if (used > 0 && !exp) errors.push('Expiration date required when used > 0');
+        if (exp) {
+            const diffDays = Math.ceil((new Date(exp) - new Date()) / (1000 * 3600 * 24));
+            if (diffDays <= 0 && used > 0) errors.push('Medication is expired');
+        }
+
+        const balance = prep - used;
+        const balEl = document.getElementById(`bal_${item.id}`);
+        if (balEl) {
+            balEl.textContent = balance;
+            balEl.classList.toggle('balance-negative', balance < 0);
+        }
+
+        const cellEl = document.getElementById(`cell_${item.id}`);
+        const errEl = document.getElementById(`err_${item.id}`);
+        if (cellEl) cellEl.classList.toggle('has-error', errors.length > 0);
+        if (errEl) errEl.textContent = errors.length ? '⚠ ' + errors.join(' · ') : '';
+
+        const rowEl = document.getElementById(`row_${item.id}`);
+        if (rowEl) rowEl.classList.toggle('row-error', errors.length > 0);
+
+        return errors.map(msg => `${item.name}: ${msg}`);
+    }
+
+    function validateAll() {
+        let issues = [];
+        MASTER.forEach(item => { issues = issues.concat(validateItem(item)); });
+
+        // clear loose category error summaries first
+        document.querySelectorAll('[id^="looseerr_"]').forEach(el => el.textContent = '');
+
+        const pName = document.getElementById('pName').value.trim();
+        const pHN = document.getElementById('pHN').value.trim();
+        if (!pName) issues.push('Patient Name is required');
+        if (!pHN) issues.push('HN is required');
+
+        return issues;
+    }
+
+    function refreshAlertBanner() {
+        const issues = validateAll();
+        const bar = document.getElementById('liveAlertBar');
+        if (issues.length > 0) {
+            bar.style.display = 'flex';
+            document.getElementById('liveAlertText').textContent = 'issue(s) found — see highlighted fields below';
+            document.getElementById('liveAlertCount').textContent = issues.length;
+        } else {
+            bar.style.display = 'none';
+        }
+        return issues;
+    }
+
+    // ---------------- Draft persistence (localStorage) — "data saved for next open" ----------------
+    function loadJSON(key, fallback) {
+        try { const v = JSON.parse(localStorage.getItem(key)); return v === null ? fallback : v; }
+        catch (e) { return fallback; }
+    }
+    function saveJSON(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
+
+    function rawMeta() {
+        const o = {};
+        META_FIELD_IDS.forEach(id => { const el = document.getElementById(id); if (el) o[id] = el.value; });
+        return o;
+    }
+    function applyMeta(o) {
+        if (!o) return;
+        META_FIELD_IDS.forEach(id => { const el = document.getElementById(id); if (el && o[id] !== undefined) el.value = o[id]; });
+    }
+
+    function saveDraft() {
+        const state = { meta: rawMeta(), items: {} };
+        MASTER.forEach(it => {
+            const usedEl = document.getElementById(`used_${it.id}`);
+            const expEl = document.getElementById(`exp_${it.id}`);
+            const prepEl = document.getElementById(`prep_${it.id}`);
+            state.items[it.id] = {
+                used: usedEl ? usedEl.value : '',
+                exp: expEl ? expEl.value : '',
+                prep: prepEl ? prepEl.value : ''
+            };
+        });
+        saveJSON(DRAFT_KEY, state);
+        const note = document.getElementById('draftSavedNote');
+        note.innerHTML = `💾 Draft autosaved — <b>${new Date().toLocaleTimeString()}</b>`;
+    }
+
+    function loadDraft() {
+        const state = loadJSON(DRAFT_KEY, null);
+        if (!state) return;
+        applyMeta(state.meta);
+        MASTER.forEach(it => {
+            const s = state.items && state.items[it.id];
+            if (!s) return;
+            const usedEl = document.getElementById(`used_${it.id}`);
+            const expEl = document.getElementById(`exp_${it.id}`);
+            const prepEl = document.getElementById(`prep_${it.id}`);
+            if (usedEl && s.used !== '') usedEl.value = s.used;
+            if (expEl && s.exp) expEl.value = s.exp;
+            if (prepEl && s.prep !== '') prepEl.value = s.prep;
+        });
+        const note = document.getElementById('draftSavedNote');
+        note.innerHTML = `↩️ Restored a previously unsaved draft from this browser.`;
+    }
+
+    function clearForm() {
+        if (!confirm('Clear all entered data on this form? This does not delete anything already in the History Log.')) return;
+        META_FIELD_IDS.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+        document.getElementById('pDate').valueAsDate = new Date();
+        document.getElementById('pLastUpdate').valueAsDate = new Date();
+        document.getElementById('pKitNo').value = '3';
+        MASTER.forEach(it => {
+            const usedEl = document.getElementById(`used_${it.id}`);
+            const expEl = document.getElementById(`exp_${it.id}`);
+            const prepEl = document.getElementById(`prep_${it.id}`);
+            if (usedEl) usedEl.value = '0';
+            if (expEl) expEl.value = '';
+            if (prepEl) prepEl.value = '';
+        });
+        updateKitNoDisplay();
+        refreshAlertBanner();
+        saveDraft();
+    }
+
+    // ---------------- History log — "save log for tracking history" ----------------
+    function loadHistory() { return loadJSON(HISTORY_KEY, []); }
+    function persistHistory(list) { saveJSON(HISTORY_KEY, list); }
+
+    function buildSnapshot(action) {
+        return {
+            ts: Date.now(),
+            action,
+            meta: rawMeta(),
+            items: MASTER.map(it => ({ id: it.id, name: it.name, cat: it.cat, prep: getPrep(it), used: getUsed(it.id), exp: getExp(it.id) }))
+        };
+    }
+
+    function saveToHistory(action) {
+        const list = loadHistory();
+        list.unshift(buildSnapshot(action));
+        if (list.length > 200) list.length = 200;
+        persistHistory(list);
+        renderHistory();
+    }
+
+    function renderHistory() {
+        const list = loadHistory();
+        const body = document.getElementById('historyBody');
+        if (list.length === 0) {
+            body.innerHTML = '<tr><td colspan="8" class="hist-empty">No saved records yet.</td></tr>';
+            return;
+        }
+        body.innerHTML = list.map((rec, i) => {
+            const usedCount = rec.items.filter(x => x.used > 0).length;
+            return `<tr>
+                <td>${new Date(rec.ts).toLocaleString()}</td>
+                <td>${rec.action}</td>
+                <td>${rec.meta.pKitNo || ''}</td>
+                <td>${rec.meta.pName || ''}</td>
+                <td>${rec.meta.pHN || ''}</td>
+                <td>${usedCount}</td>
+                <td><button class="btn btn-a4 btn-small" onclick="viewHistoryEntry(${i})">View</button></td>
+                <td><button class="btn btn-clear btn-small" onclick="deleteHistoryEntry(${i})">Delete</button></td>
+            </tr>`;
+        }).join('');
+    }
+
+    function viewHistoryEntry(index) {
+        const list = loadHistory();
+        const rec = list[index];
+        if (!rec) return;
+        const used = rec.items.filter(x => x.used > 0);
+        const rows = used.length
+            ? used.map(x => `<tr><td>${x.cat}</td><td style="text-align:left;">${x.name}</td><td>${x.prep}</td><td>${x.used}</td><td>${x.exp || '-'}</td></tr>`).join('')
+            : '<tr><td colspan="5">No medications used in this record.</td></tr>';
+        document.getElementById('historyDetail').innerHTML = `
+            <p><b>Saved:</b> ${new Date(rec.ts).toLocaleString()} &nbsp; <b>Action:</b> ${rec.action}</p>
+            <p><b>Patient:</b> ${rec.meta.pName || '-'} &nbsp; <b>HN:</b> ${rec.meta.pHN || '-'} &nbsp; <b>Ward:</b> ${rec.meta.pWard || '-'} &nbsp; <b>Kit No:</b> ${rec.meta.pKitNo || '-'}</p>
+            <p><b>Doctor:</b> ${rec.meta.pDoctor || '-'} &nbsp; <b>Operation:</b> ${rec.meta.pOperation || '-'}</p>
+            <table class="history-table"><thead><tr><th>Category</th><th>Description</th><th>Prep</th><th>Used</th><th>Exp</th></tr></thead><tbody>${rows}</tbody></table>
+        `;
+        document.getElementById('historyModal').style.display = 'block';
+    }
+
+    function deleteHistoryEntry(index) {
+        if (!confirm('Delete this history record? This cannot be undone.')) return;
+        const list = loadHistory();
+        list.splice(index, 1);
+        persistHistory(list);
+        renderHistory();
+    }
+
+    function clearHistory() {
+        if (!confirm('Clear the entire history log? This cannot be undone.')) return;
+        persistHistory([]);
+        renderHistory();
+    }
+
+    // ---------------- Print (structure must stay identical to the paper forms) ----------------
+    function formatPrintDate(dStr) {
+        if (!dStr) return '...................';
+        const parts = dStr.split('-');
+        return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+
+    function itemsByCategory(cat) { return MASTER.filter(it => it.cat === cat); }
+
+    function buildPrintColumns(colspan, headerRowHtml, rowFn) {
+        return PRINT_COLUMNS.map(catList => {
+            let html = `<table class="print-table"><thead>${headerRowHtml}</thead><tbody>`;
+            catList.forEach(cat => {
+                const items = itemsByCategory(cat);
+                if (items.length === 0) return;
+                html += `<tr><td colspan="${colspan}" class="cat-row-header-print">${cat}</td></tr>`;
+                items.forEach(item => { html += rowFn(item); });
+            });
+            html += '</tbody></table>';
+            return `<div>${html}</div>`;
+        }).join('');
+    }
+
+    function collectMetaForPrint() {
+        return {
+            nm: document.getElementById('pName').value || '..............................',
+            hn: document.getElementById('pHN').value || '....................',
+            wd: document.getElementById('pWard').value,
+            dt: formatPrintDate(document.getElementById('pDate').value),
+            tm: document.getElementById('pTime').value || '..........',
+            dc: document.getElementById('pDoctor').value || '..............................',
+            op: document.getElementById('pOperation').value || '..............................',
+            kit: document.getElementById('pKitNo').value,
+            theater: document.getElementById('pTheaterNo').value || '..........',
+            s1: document.getElementById('pSealOut').value || '....................',
+            s2: document.getElementById('pSealIn').value || '....................',
+            lu: formatPrintDate(document.getElementById('pLastUpdate').value),
+            ad: document.getElementById('pAddOn').value || '..............................................................',
+            pr: document.getElementById('staffPrep').value || '....................',
+            rc: document.getElementById('staffRec').value || '....................'
+        };
+    }
+
+    function printA4() {
+        document.body.className = 'mode-a4';
+        const m = collectMetaForPrint();
+        document.getElementById('out4-pname').innerText = m.nm;
+        document.getElementById('out4-hn').innerText = m.hn;
+        document.getElementById('out4-ward').innerText = m.wd;
+        document.getElementById('out4-date').innerText = m.dt;
+        document.getElementById('out4-time').innerText = m.tm;
+        document.getElementById('out4-doc').innerText = m.dc;
+        document.getElementById('out4-op').innerText = m.op;
+        document.getElementById('out4-kitno').innerText = m.kit;
+        document.getElementById('out4-theater').innerText = m.theater;
+        document.getElementById('out4-addon').innerText = m.ad;
+        document.getElementById('out4-prep').innerText = m.pr;
+        document.getElementById('out4-rec').innerText = m.rc;
+        document.getElementById('out4-seal1').innerText = m.s1;
+        document.getElementById('out4-seal2').innerText = m.s2;
+        document.getElementById('out4-lastupdate').innerText = m.lu;
+
+        const headerRow = '<tr><th>Description</th><th>Prep</th><th>Used</th><th>Bal</th></tr>';
+        document.getElementById('out4-columns').innerHTML = buildPrintColumns(4, headerRow, item => {
+            const used = getUsed(item.id);
+            const prep = getPrep(item);
+            const bal = prep - used;
+            return `<tr><td style="text-align:left;">${item.name}</td><td>${prep || ''}</td><td>${used || ''}</td><td>${(prep || used) ? bal : ''}</td></tr>`;
+        });
+
+        setTimeout(() => window.print(), 250);
+    }
+
+    function printA5() {
+        document.body.className = 'mode-a5';
+        const m = collectMetaForPrint();
+        document.getElementById('out5-kitno').innerText = m.kit;
+        document.getElementById('out5-lastupdate').innerText = m.lu;
+        document.getElementById('out5-date').innerText = m.dt;
+
+        const headerRow = '<tr><th>Description</th><th>no</th><th>Exp</th></tr>';
+        document.getElementById('out5-columns').innerHTML = buildPrintColumns(3, headerRow, item => {
+            const prep = getPrep(item);
+            const exp = getExp(item.id);
+            return `<tr><td style="text-align:left;">${item.name}</td><td>${prep || ''}</td><td>${exp ? formatPrintDate(exp) : ''}</td></tr>`;
+        });
+
+        setTimeout(() => window.print(), 250);
+    }
+
+    // ---------------- Orchestration: validate -> log to history -> (print) ----------------
+    function handlePrint(target) {
+        const issues = refreshAlertBanner();
+        if (issues.length > 0) {
+            const list = document.getElementById('issueList');
+            list.innerHTML = issues.map(i => `<li>${i}</li>`).join('');
+            document.getElementById('issueModal').style.display = 'block';
+            return;
+        }
+        if (target === 'SAVE') { saveToHistory('Manual Save'); return; }
+        if (target === 'A4') { saveToHistory('Print A4 — Charging Record'); printA4(); return; }
+        if (target === 'A5') { saveToHistory('Print A5 — Kit Prep Label'); printA5(); return; }
+    }
+</script>
+
+</body>
+</html>
