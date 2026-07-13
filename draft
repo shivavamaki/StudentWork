@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anesthesia Kit & Record Manager</title>
+    <style>
+        /* --- CSS สำหรับหน้าจอหลัก (UI) --- */
+        body { font-family: 'Sarabun', sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; }
+        .no-print-zone { max-width: 1100px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #1a73e8; margin-top: 0; }
+        
+        .setup-section { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px; padding: 20px; background: #f8f9fa; border-radius: 8px; }
+        .setup-section label { font-weight: bold; display: block; margin-bottom: 5px; }
+        .setup-section input { width: 90%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; background: white; }
+        th, td { border: 1px solid #dee2e6; padding: 10px; text-align: center; }
+        th { background-color: #1a73e8; color: white; }
+        .cat-head { background-color: #e8f0fe; text-align: left; font-weight: bold; padding-left: 15px; color: #1a73e8; }
+        .item-name { text-align: left; width: 35%; }
+        
+        .btn-group { display: flex; justify-content: center; gap: 15px; margin-top: 30px; position: sticky; bottom: 20px; background: white; padding: 15px; border-top: 1px solid #eee; }
+        .btn { padding: 12px 25px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 15px; transition: 0.3s; }
+        .btn-exp { background-color: #ff9800; color: white; }
+        .btn-record { background-color: #4caf50; color: white; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 10px rgba(0,0,0,0.2); }
+
+        input[type="number"] { width: 60px; }
+
+        /* --- CSS สำหรับการพิมพ์ (Print Layouts) --- */
+        #print-kit-label, #print-charging-record { display: none; }
+
+        @media print {
+            .no-print-zone { display: none !important; }
+            #print-kit-label, #print-charging-record { display: block; }
+            
+            table { border: 1px solid black !important; width: 100%; }
+            th, td { border: 1px solid black !important; font-size: 12px; padding: 4px; }
+            .cat-head { background-color: #eee !important; -webkit-print-color-adjust: exact; }
+            
+            /* ตั้งค่าขนาดกระดาษตามที่ขอ */
+            @page { margin: 1cm; }
+            .page-break { page-break-after: always; }
+        }
+
+        /* Modal แจ้งเตือน */
+        .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); }
+        .modal-content { background: white; margin: 10% auto; padding: 25px; width: 50%; border-radius: 10px; text-align: center; }
+        .close-btn { background: #d32f2f; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="no-print-zone">
+    <h1>Anesthesia Manager</h1>
+    
+    <div class="setup-section">
+        <div><label>Kit No.</label><input type="text" id="kit_no" value="3"></div>
+        <div><label>Patient Name</label><input type="text" id="p_name" placeholder="ชื่อ-นามสกุล"></div>
+        <div><label>HN</label><input type="text" id="p_hn" placeholder="เลข HN"></div>
+        <div><label>Ward</label><input type="text" id="p_ward" placeholder="Ward"></div>
+        <div><label>Date</label><input type="date" id="p_date"></div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Medication Description</th>
+                <th>Exp Date</th>
+                <th>Prepare</th>
+                <th>Used</th>
+                <th>Balance</th>
+            </tr>
+        </thead>
+        <tbody id="main-table-body">
+            </tbody>
+    </table>
+
+    <div class="btn-group">
+        <button class="btn btn-exp" onclick="printKitLabel()">🖨️ พิมพ์ใบแปะกล่อง (Exp Date - A5)</button>
+        <button class="btn btn-record" onclick="printChargingRecord()">🖨️ พิมพ์ใบบันทึกการใช้ (Record - A4)</button>
+    </div>
+</div>
+
+<div id="expModal" class="modal">
+    <div class="modal-content">
+        <h2 style="color: #d32f2f;">🚨 ตรวจพบยาใกล้หมดอายุ (< 3 เดือน)</h2>
+        <div id="expItemsList" style="text-align: left; max-height: 300px; overflow-y: auto;"></div>
+        <button class="close-btn" onclick="document.getElementById('expModal').style.display='none'">รับทราบ</button>
+    </div>
+</div>
+
+<div id="print-kit-label">
+    <div style="text-align: center;">
+        <h2 style="margin: 0;">Anesthesia Kit No. <span id="print_kit_no"></span></h2>
+        <hr>
+    </div>
+    <div id="kit-label-content"></div>
+    <div style="margin-top: 15px; display: flex; justify-content: space-between; font-size: 12px;">
+        <div>Check By: ..........................</div>
+        <div>Due Date: ..........................</div>
+    </div>
+    <div style="font-size: 10px; margin-top: 10px;">Last update: <span class="last-up"></span></div>
+</div>
+
+<div id="print-charging-record">
+    <div style="text-align: center;">
+        <h2 style="margin: 0;">Anesthesia Charging Record</h2>
+        <p style="margin: 5px 0;">Bangkok Hospital</p>
+    </div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; font-size: 12px; margin-bottom: 10px;">
+        <div>Patient: <span id="rec_p_name"></span></div>
+        <div>HN: <span id="rec_p_hn"></span></div>
+        <div>Ward: <span id="rec_p_ward"></span></div>
+        <div>Date: <span id="rec_p_date"></span></div>
+        <div>BOX: <span id="rec_kit_no"></span></div>
+    </div>
+    <div id="charging-record-content"></div>
+    <div style="margin-top: 20px; font-size: 12px; display: grid; grid-template-columns: 1fr 1fr;">
+        <div>Prepared by: .......................................</div>
+        <div>Received by: .......................................</div>
+        <div>Seal No. (OUT): ....................................</div>
+        <div>Seal No. (IN): ......................................</div>
+    </div>
+    <div style="font-size: 10px; margin-top: 10px;">Timestamp: <span id="print_time"></span> | Last update: <span class="last-up"></span></div>
+</div>
+
+<script>
+    // รายชื่อยาแยกตามกลุ่ม (อ้างอิงจากรูปภาพ)
+    const medGroups = [
+        {
+            name: "Intravenous anesthesia",
+            items: [
+                { id: "m1", name: "Diprivan 20 ml inj.", prep: 1 },
+                { id: "m2", name: "Anepol 120 mg/12 ml inj.", prep: 1 },
+                { id: "m3", name: "Propofol-Lipuro 1% 20 ml inj.", prep: 1 },
+                { id: "m4", name: "Midazolam 5 mg/ml inj.", prep: 2 },
+                { id: "m5", name: "Valium 10 mg (Diazepam) inj.", prep: 1 }
+            ]
+        },
+        {
+            name: "Muscle Relaxant",
+            items: [
+                { id: "m6", name: "Esmeron 50 mg/5ml inj", prep: 1 },
+                { id: "m7", name: "Tracrium inj 25 mg (Atracurium)", prep: 1 },
+                { id: "m8", name: "Tracrium inj 50 mg (Atracurium)", prep: 1 },
+                { id: "m9", name: "Nimbex 10mg/5ml (Cis-atracuriun)", prep: 2 }
+            ]
+        },
+        {
+            name: "Narcotics/Analgesics",
+            items: [
+                { id: "m10", name: "Morphine 10 mg/ml inj", prep: 2 },
+                { id: "m11", name: "Pethidine 50 mg/ml inj", prep: 2 },
+                { id: "m12", name: "Fentanyl 100 mcg/2ml inj.", prep: 2 },
+                { id: "m13", name: "Dynastat 40 mg inj.", prep: 1 }
+            ]
+        },
+        {
+            name: "Reversal Agent",
+            items: [
+                { id: "m14", name: "Atropine 0.6 mg/ml inj.", prep: 4 },
+                { id: "m15", name: "Prostigmin 2.5mg/ml (Neostigmine)", prep: 2 },
+                { id: "m16", name: "Narcan 0.4 mg/ml (Naloxone) inj.", prep: 1 },
+                { id: "m17", name: "Glyco-p 0.2 mg/ml inj.", prep: 2 }
+            ]
+        },
+        {
+            name: "Cardiovascular",
+            items: [
+                { id: "m18", name: "Adrenaline 1 mg/ml inj.", prep: 1 },
+                { id: "m19", name: "Cardepine 2mg/2 ml inj.", prep: 1 },
+                { id: "m20", name: "Ephedrine 30 mg inj", prep: 2 }
+            ]
+        }
+    ];
+
+    const tableBody = document.getElementById('main-table-body');
+    const updateTime = new Date().toLocaleDateString('th-TH');
+    document.querySelectorAll('.last-up').forEach(el => el.innerText = updateTime);
+    document.getElementById('p_date').valueAsDate = new Date();
+
+    // สร้างตารางในหน้าจอหลัก
+    function initTable() {
+        medGroups.forEach(group => {
+            const headRow = `<tr><td colspan="5" class="cat-head">${group.name}</td></tr>`;
+            tableBody.innerHTML += headRow;
+            
+            group.items.forEach(item => {
+                const row = `
+                    <tr>
+                        <td class="item-name">${item.name}</td>
+                        <td><input type="date" id="exp_${item.id}" class="exp-date-input" onchange="checkNearExp()"></td>
+                        <td><input type="number" id="prep_${item.id}" value="${item.prep}" readonly></td>
+                        <td><input type="number" id="used_${item.id}" value="0" min="0" oninput="calculate('${item.id}')"></td>
+                        <td><input type="number" id="bal_${item.id}" value="${item.prep}" readonly></td>
+                    </tr>
+                `;
+                tableBody.innerHTML += row;
+            });
+        });
+    }
+
+    // คำนวณยอดคงเหลือ
+    function calculate(id) {
+        const prep = parseInt(document.getElementById(`prep_${id}`).value) || 0;
+        const used = parseInt(document.getElementById(`used_${id}`).value) || 0;
+        document.getElementById(`bal_${id}`).value = prep - used;
+    }
+
+    // ตรวจสอบวันหมดอายุ (เตือนล่วงหน้า 3 เดือน)
+    function checkNearExp() {
+        const today = new Date();
+        const limit = new Date();
+        limit.setMonth(today.getMonth() + 3);
+        
+        let alerts = "";
+        medGroups.forEach(group => {
+            group.items.forEach(item => {
+                const expVal = document.getElementById(`exp_${item.id}`).value;
+                if(expVal) {
+                    const expDate = new Date(expVal);
+                    if(expDate < limit) {
+                        const status = expDate < today ? "หมดอายุแล้ว!" : "ใกล้หมดอายุ";
+                        alerts += `<p>❌ <b>${item.name}</b>: ${status} (${expDate.toLocaleDateString('th-TH')})</p>`;
+                    }
+                }
+            });
+        });
+
+        if(alerts !== "") {
+            document.getElementById('expItemsList').innerHTML = alerts;
+            document.getElementById('expModal').style.display = 'block';
+        }
+    }
+
+    // ฟังก์ชันพิมพ์ใบแปะกล่อง (A5 - อ้างอิงรูปที่ 1)
+    function printKitLabel() {
+        document.getElementById('print_kit_no').innerText = document.getElementById('kit_no').value;
+        let content = "<table><tr><th>Description</th><th>No.</th><th>Exp Date</th></tr>";
+        
+        medGroups.forEach(group => {
+            content += `<tr><td colspan="3" class="cat-head">${group.name}</td></tr>`;
+            group.items.forEach(item => {
+                const exp = document.getElementById(`exp_${item.id}`).value || "-";
+                content += `<tr><td class="item-name">${item.name}</td><td>${item.prep}</td><td>${exp}</td></tr>`;
+            });
+        });
+        content += "</table>";
+        document.getElementById('kit-label-content').innerHTML = content;
+        
+        window.print();
+    }
+
+    // ฟังก์ชันพิมพ์ใบบันทึกการใช้ (A4 - อ้างอิงรูปที่ 2)
+    function printChargingRecord() {
+        document.getElementById('rec_p_name').innerText = document.getElementById('p_name').value;
+        document.getElementById('rec_p_hn').innerText = document.getElementById('p_hn').value;
+        document.getElementById('rec_p_ward').innerText = document.getElementById('p_ward').value;
+        document.getElementById('rec_p_date').innerText = document.getElementById('p_date').value;
+        document.getElementById('rec_kit_no').innerText = document.getElementById('kit_no').value;
+        document.getElementById('print_time').innerText = new Date().toLocaleString('th-TH');
+
+        let content = "<table><tr><th>Description</th><th>Prepare</th><th>Used</th><th>Balance</th></tr>";
+        
+        medGroups.forEach(group => {
+            content += `<tr><td colspan="4" class="cat-head">${group.name}</td></tr>`;
+            group.items.forEach(item => {
+                const used = document.getElementById(`used_${item.id}`).value;
+                const bal = document.getElementById(`bal_${item.id}`).value;
+                content += `<tr><td class="item-name">${item.name}</td><td>${item.prep}</td><td>${used}</td><td>${bal}</td></tr>`;
+            });
+        });
+        content += "</table>";
+        document.getElementById('charging-record-content').innerHTML = content;
+        
+        window.print();
+    }
+
+    window.onload = initTable;
+</script>
+
+</body>
+</html>
