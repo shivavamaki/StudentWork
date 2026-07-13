@@ -26,34 +26,107 @@
         }
 
         body {
-            font-family: 'Helvetica Neue', Arial, sans-serif;
-            margin: 20px;
-            background-color: #f4f6f8;
-            color: #333;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            margin: 0;
+            background: #f3f5f7;
+            color: #23343d;
         }
 
         .no-print-area {
-            max-width: 1300px;
-            margin: 0 auto 40px auto;
-            background: #ffffff;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            max-width: 1100px;
+            margin: 24px auto 40px auto;
+            padding: 0;
         }
 
-        h2, h3 { color: var(--primary); margin-top: 0; }
-        .grid-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin-bottom: 20px; }
-        .form-group { display: flex; flex-direction: column; }
-        label { font-weight: bold; margin-bottom: 5px; font-size: 13px; color: #444; }
-        input, select, textarea { padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
-        
-        .btn-group { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 20px; padding: 15px; background: #eef2f3; border-radius: 6px; }
-        .btn { padding: 12px 24px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; color: white; font-size: 14px; display: inline-flex; align-items: center; gap: 8px; }
-        .btn-success { background-color: var(--accent); }
-        .btn-a4 { background-color: #2980b9; }
-        .btn-a5 { background-color: #8e44ad; }
-        .btn-pharma { background-color: #d35400; }
-        .btn:hover { opacity: 0.9; }
+        .page-shell {
+            background: #ffffff;
+            border: 1px solid #dfe5ea;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+            overflow: hidden;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 24px 28px;
+            background: linear-gradient(90deg, #0f4c81 0%, #1f6f9f 100%);
+            color: white;
+        }
+
+        .page-header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        .page-header p {
+            margin: 6px 0 0;
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .header-badge {
+            background: rgba(255,255,255,0.16);
+            padding: 8px 12px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .content-body {
+            padding: 22px 24px 24px 24px;
+        }
+
+        .section-card {
+            background: #ffffff;
+            border: 1px solid #e3e8ec;
+            border-left: 4px solid #1f6f9f;
+            border-radius: 10px;
+            padding: 16px 18px;
+            margin-bottom: 14px;
+        }
+
+        h2, h3 { color: #18394a; margin-top: 0; }
+        .section-card h3 { margin-bottom: 12px; font-size: 17px; }
+        .grid-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; align-items: end; }
+        .form-group { display: flex; flex-direction: column; gap: 6px; }
+        label { font-weight: 600; margin-bottom: 0; font-size: 13px; color: #55656f; }
+        input, select, textarea {
+            padding: 10px 12px;
+            border: 1px solid #cdd6dc;
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+            color: #23343d;
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #1f6f9f;
+            box-shadow: 0 0 0 3px rgba(31,111,159,0.12);
+        }
+        textarea { min-height: 72px; resize: vertical; }
+
+        .btn-group { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+        .btn {
+            padding: 11px 16px;
+            border: none;
+            border-radius: 999px;
+            cursor: pointer;
+            font-weight: 700;
+            color: white;
+            font-size: 14px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+        }
+        .btn-success { background-color: #2b8a3e; }
+        .btn-a4 { background-color: #1f6f9f; }
+        .btn-a5 { background-color: #6f42c1; }
+        .btn-pharma { background-color: #d97706; }
+        .btn:hover { opacity: 0.95; transform: translateY(-1px); }
 
         .group-intravenous { background-color: var(--bg-intravenous) !important; }
         .group-relaxant { background-color: var(--bg-relaxant) !important; }
@@ -111,13 +184,21 @@
 
 <!-- WEB INTERFACE AREA -->
 <div class="no-print-area">
-    <h2>🧰 Anesthetic Kit Management System (IPD to OR)</h2>
-    <hr>
-    
-    <h3>1. Case Details & Metadata</h3>
+    <div class="page-shell">
+        <div class="page-header">
+            <div>
+                <h1>Anesthetic Kit Checklist</h1>
+                <p>Simple record for ward to OR transfer</p>
+            </div>
+            <div class="header-badge">Box Record</div>
+        </div>
+
+        <div class="content-body">
+            <div class="section-card">
+                <h3>1. Basic information</h3>
     <div class="grid-form">
         <div class="form-group">
-            <label>Patient Name:</label>
+            <label>Patient name</label>
             <input type="text" id="pName" placeholder="Enter patient name">
         </div>
         <div class="form-group">
@@ -125,7 +206,7 @@
             <input type="text" id="pHN" placeholder="Enter HN">
         </div>
         <div class="form-group">
-            <label>Ward:</label>
+            <label>Ward</label>
             <select id="pWard">
                 <option value="ICU">ICU</option>
                 <option value="CCU">CCU</option>
@@ -138,23 +219,23 @@
             </select>
         </div>
         <div class="form-group">
-            <label>Date (Auto Real-time):</label>
+            <label>Date</label>
             <input type="date" id="pDate">
         </div>
         <div class="form-group">
-            <label>Time Used (Real-time):</label>
+            <label>Time</label>
             <input type="time" id="pTime" step="1">
         </div>
         <div class="form-group">
-            <label>Doctor:</label>
+            <label>Doctor</label>
             <input type="text" id="pDoctor" placeholder="Enter doctor name">
         </div>
         <div class="form-group" style="grid-column: span 2;">
-            <label>Operation:</label>
+            <label>Operation</label>
             <input type="text" id="pOperation" placeholder="Enter operation name">
         </div>
         <div class="form-group">
-            <label>Anesthesia Kit No (1-10):</label>
+            <label>Kit no.</label>
             <select id="pKitNo">
                 <script>
                     for(let i=1; i<=10; i++) document.write(`<option value="${i}">Anesthesia Kit No. ${i}</option>`);
@@ -162,27 +243,29 @@
             </select>
         </div>
         <div class="form-group">
-            <label>Seal No.1 OUT:</label>
-            <input type="text" id="pSealOut" placeholder="Seal No.1 Out">
+            <label>Seal No.1 OUT (optional):</label>
+            <input type="text" id="pSealOut" placeholder="Optional">
         </div>
         <div class="form-group">
-            <label>Seal No.2 IN:</label>
-            <input type="text" id="pSealIn" placeholder="Seal No.2 In">
+            <label>Seal No.2 IN (optional):</label>
+            <input type="text" id="pSealIn" placeholder="Optional">
         </div>
         <div class="form-group">
-            <label style="color:var(--danger)">Last Update Document:</label>
+            <label style="color:var(--danger)">Last update</label>
             <input type="date" id="pLastUpdate">
         </div>
     </div>
     <div class="form-group" style="margin-bottom: 20px;">
-        <label>Dispense add on medicine:</label>
-        <textarea id="pAddOn" rows="2" placeholder="Enter details for add on medicine..."></textarea>
+        <label>Extra medicine</label>
+        <textarea id="pAddOn" rows="2" placeholder="Add any extra medicine here..."></textarea>
+    </div>
     </div>
 
-    <h3>2. Record Medication Usage</h3>
+    <div class="section-card">
+        <h3>2. Add used medicine</h3>
     <div class="grid-form" style="background: #eef2f7; padding: 20px; border-radius: 6px; border-left: 5px solid var(--primary);">
         <div class="form-group">
-            <label>🔍 Filter by Sub-Kit Box:</label>
+            <label>Filter by box</label>
             <select id="subBoxFilter" onchange="filterDrugMenu()">
                 <option value="ALL">-- Show All Medications --</option>
                 <option value="box1">Box 1: Controlled substances</option>
@@ -191,59 +274,67 @@
             </select>
         </div>
         <div class="form-group" style="grid-column: span 2;">
-            <label>Select Medication Description:</label>
+            <label>Select medicine</label>
             <select id="drugSelect">
                 <!-- Loaded dynamically by JS -->
             </select>
         </div>
         <div class="form-group">
-            <label>Used Qty:</label>
+            <label>Qty used</label>
             <input type="number" id="useQty" min="1" value="1">
         </div>
         <div class="form-group">
-            <label>📅 Expired Date Tracking:</label>
+            <label>Exp. date</label>
             <input type="date" id="expDate">
         </div>
     </div>
     
     <div style="text-align: right; margin-top: 15px;">
-        <button class="btn btn-success" onclick="addDrugLog()">➕ Add Medication Entry</button>
+        <button class="btn btn-success" onclick="addDrugLog()">➕ Add to list</button>
+    </div>
     </div>
 
-    <h3>3. Current Case Live Entry Stream</h3>
+    <div class="section-card">
+        <h3>3. Used medicine list</h3>
     <table class="ui-table" id="liveStreamTable">
         <thead>
             <tr>
-                <th>Timestamp</th>
-                <th>Category</th>
-                <th>Medication Description</th>
-                <th>Qty Used</th>
-                <th>Expiration Date</th>
-                <th>Alert Status (3 Mos)</th>
-                <th>Action</th>
+                <th style="width:12%">Category</th>
+                <th style="width:40%">Description</th>
+                <th style="width:8%; text-align:center;">Prepare</th>
+                <th style="width:8%; text-align:center;">Used</th>
+                <th style="width:8%; text-align:center;">Balance</th>
+                <th style="width:12%; text-align:center;">Exp. date</th>
+                <th style="width:12%; text-align:center;">Status</th>
+                <th style="width:10%; text-align:center;">Action</th>
             </tr>
         </thead>
         <tbody>
-            <tr><td colspan="7" style="text-align:center; color:#7f8c8d;">No medication entry recorded yet.</td></tr>
+            <tr><td colspan="8" style="text-align:center; color:#7f8c8d;">No medication recorded yet — showing master list below.</td></tr>
         </tbody>
     </table>
-
-    <h3>4. Staff Signatures</h3>
-    <div class="grid-form">
-        <div class="form-group">
-            <label>Prepared By:</label>
-            <input type="text" id="staffPrep" placeholder="Pharmacist / Staff name">
-        </div>
-        <div class="form-group">
-            <label>Received By:</label>
-            <input type="text" id="staffRec" placeholder="Nurse name">
-        </div>
     </div>
 
-    <div class="btn-group">
-        <button class="btn btn-a4" onclick="executePrint('A4-NURSE')">🖨️ Print Nurse A4 Checklist Sheet</button>
-        <button class="btn btn-a5" onclick="executePrint('A5-NURSE')">🖨️ Print Nurse A5 Charging Record</button>
-        <button class="btn btn-pharma" onclick="executePrint('A5-PHARMA')">🖨️ Print Pharmacist Restock Order (Selected Only)</button>
+    <div class="section-card">
+        <h3>4. Staff</h3>
+        <div class="grid-form">
+            <div class="form-group">
+                <label>Prepared by</label>
+                <input type="text" id="staffPrep" placeholder="Pharmacist / Staff name">
+            </div>
+            <div class="form-group">
+                <label>Received by</label>
+                <input type="text" id="staffRec" placeholder="Nurse name">
+            </div>
+        </div>
+
+        <div class="btn-group">
+            <button class="btn btn-a4" onclick="executePrint('A4-NURSE')">🖨️ Print checklist</button>
+            <button class="btn btn-a5" onclick="executePrint('A5-NURSE')">🖨️ Print charge record</button>
+            <button class="btn btn-pharma" onclick="executePrint('A5-PHARMA')">🖨️ Print restock list</button>
+        </div>
+    </div>
+        </div>
     </div>
 </div>
 
@@ -495,6 +586,7 @@
         }, 1000);
 
         filterDrugMenu();
+        refreshLiveUITable();
     };
 
     function filterDrugMenu() {
@@ -525,14 +617,14 @@
     }
 
     function verifyExpirationRisk(dateVal) {
-        if (!dateVal) return { label: '<span class="badge badge-success">No Date</span>', alert: false };
+        if (!dateVal) return { label: '<span class="badge badge-success">No Date</span>', alert: false, days: null, text: 'No date' };
         const dTarget = new Date(dateVal);
         const dToday = new Date();
         const diff = Math.ceil((dTarget.getTime() - dToday.getTime()) / (1000 * 3600 * 24));
 
-        if (diff <= 0) return { label: '<span class="badge badge-danger">Expired</span>', alert: true };
-        if (diff <= 90) return { label: `<span class="badge badge-warning">Alert (${diff} Days left)</span>`, alert: true };
-        return { label: '<span class="badge badge-success">Valid</span>', alert: false };
+        if (diff <= 0) return { label: '<span class="badge badge-danger">Expired</span>', alert: true, days: diff, text: 'Expired' };
+        if (diff <= 90) return { label: `<span class="badge badge-warning">Alert (${diff} Days left)</span>`, alert: true, days: diff, text: `Alert (${diff} days left)` };
+        return { label: '<span class="badge badge-success">Valid</span>', alert: false, days: diff, text: 'Valid' };
     }
 
     function addDrugLog() {
@@ -542,7 +634,10 @@
         const timestamp = document.getElementById('pTime').value;
 
         if (!mName) { alert('Please select a medication entry first.'); return; }
-        if (!exp) { alert('Please provide the medication expiration date via calendar element.'); return; }
+        const rStat = verifyExpirationRisk(exp);
+        if (rStat.alert) {
+            alert(`Warning: ${mName} -- ${rStat.text}`);
+        }
 
         recordedLogs.push({
             id: Date.now(),
@@ -563,27 +658,42 @@
     function refreshLiveUITable() {
         const body = document.querySelector('#liveStreamTable tbody');
         body.innerHTML = '';
-        if (recordedLogs.length === 0) {
-            body.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#7f8c8d;">No medication entry recorded yet.</td></tr>';
-            return;
-        }
 
-        recordedLogs.forEach(log => {
-            const meta = MasterDrugData.find(d => d.name === log.name);
-            const rStat = verifyExpirationRisk(log.exp);
+        // Render every drug from MasterDrugData and show used / balance / status
+        MasterDrugData.forEach((item, idx) => {
+            const usedQty = recordedLogs.filter(x => x.name === item.name).reduce((s, c) => s + c.qty, 0);
+            const balance = item.defStock > 0 ? Math.max(0, item.defStock - usedQty) : '';
+
+            // Determine expiration info from recorded logs for this drug (use earliest / closest expiry)
+            const exps = recordedLogs.filter(x => x.name === item.name).map(x => x.exp).filter(Boolean);
+            let expToShow = exps.length ? exps.reduce((a,b) => a < b ? a : b) : '';
+            const rStat = verifyExpirationRisk(expToShow);
+
             const tr = document.createElement('tr');
-            if(meta) tr.className = meta.style;
+            if (rStat.alert) tr.style.backgroundColor = 'rgba(192,57,43,0.06)';
+            if (item.style) tr.className = item.style;
+
             tr.innerHTML = `
-                <td style="text-align:center;">🕒 ${log.time}</td>
-                <td><b>${meta ? meta.cat : 'Unclassified'}</b></td>
-                <td>${log.name}</td>
-                <td style="text-align:center;"><b>${log.qty}</b></td>
-                <td style="text-align:center;">📅 ${log.exp}</td>
+                <td>${item.cat}</td>
+                <td>${item.name}</td>
+                <td style="text-align:center;">${item.defStock || ''}</td>
+                <td style="text-align:center; font-weight:bold;">${usedQty || ''}</td>
+                <td style="text-align:center;">${balance}</td>
+                <td style="text-align:center;">${expToShow ? '📅 ' + expToShow : ''}</td>
                 <td style="text-align:center;">${rStat.label}</td>
-                <td style="text-align:center;"><button class="btn" style="background:var(--danger); padding:4px 8px;" onclick="dropLogItem(${log.id})">Delete</button></td>
+                <td style="text-align:center;"><button class="btn" style="background:#1f6f9f; padding:6px 8px; border-radius:6px;" onclick="selectDrugForAdd(${idx})">Add</button></td>
             `;
             body.appendChild(tr);
         });
+    }
+
+    function selectDrugForAdd(idx) {
+        const item = MasterDrugData[idx];
+        if (!item) return;
+        // Set selector to the item and focus qty
+        const selector = document.getElementById('drugSelect');
+        selector.value = item.name;
+        document.getElementById('useQty').focus();
     }
 
     function formatPrintDate(dStr) {
@@ -601,8 +711,8 @@
         const dc = document.getElementById('pDoctor').value || '............................................';
         const op = document.getElementById('pOperation').value || '.......................................................................................';
         const kit = document.getElementById('pKitNo').value;
-        const s1 = document.getElementById('pSealOut').value || '............................';
-        const s2 = document.getElementById('pSealIn').value || '............................';
+        const s1 = document.getElementById('pSealOut').value;
+        const s2 = document.getElementById('pSealIn').value;
         const lu = formatPrintDate(document.getElementById('pLastUpdate').value);
         const ad = document.getElementById('pAddOn').value || '..................................................................................................................';
         const pr = document.getElementById('staffPrep').value || '............................';
