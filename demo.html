@@ -158,11 +158,9 @@
             body { background: white; margin: 0; padding: 0; color: #000; font-family: 'Times New Roman', Times, serif, Arial; }
             
             body.mode-a4 #print-a4-nurse { display: block !important; }
-            @page { size: A4 portrait; margin: 8mm; }
-
             body.mode-a5-nurse #print-a5-nurse { display: block !important; }
             body.mode-a5-pharma #print-a5-pharma { display: block !important; }
-            body.mode-a5-nurse @page, body.mode-a5-pharma @page { size: A5 landscape; margin: 5mm; }
+            @page { size: A4 portrait; margin: 8mm; }
 
             .print-container { width: 100%; background: white; }
             .print-title { text-align: center; font-size: 16px; font-weight: bold; margin-bottom: 8px; text-transform: uppercase; }
@@ -575,6 +573,7 @@
     let recordedLogs = [];
 
     window.onload = function() {
+        MasterDrugData.forEach(item => { item.name = normalizeDrugName(item.name); });
         document.getElementById('pDate').valueAsDate = new Date();
         document.getElementById('pLastUpdate').valueAsDate = new Date();
         
@@ -588,6 +587,11 @@
         filterDrugMenu();
         refreshLiveUITable();
     };
+
+    function normalizeDrugName(name) {
+        if (!name) return name;
+        return name.replace(/^([a-z])/, match => match.toUpperCase());
+    }
 
     function filterDrugMenu() {
         const selectedFilter = document.getElementById('subBoxFilter').value;
@@ -634,6 +638,22 @@
         const timestamp = document.getElementById('pTime').value;
 
         if (!mName) { alert('Please select a medication entry first.'); return; }
+        if (qty <= 0) { alert('Quantity used must be at least 1.'); return; }
+
+        const drugMaster = MasterDrugData.find(item => item.name === mName);
+        if (!drugMaster) { alert('Selected medication is not valid.'); return; }
+
+        const currentUsed = recordedLogs.filter(x => x.name === mName).reduce((sum, log) => sum + log.qty, 0);
+        if (drugMaster.defStock !== null && drugMaster.defStock !== undefined) {
+            if (currentUsed + qty > drugMaster.defStock) {
+                alert(`Used quantity for ${mName} cannot exceed prepared amount (${drugMaster.defStock}).`);
+                return;
+            }
+        }
+
+        const confirmText = `Confirm adding ${qty} of ${mName}${exp ? ` with expiration ${exp}` : ''} to the used medicine list?`;
+        if (!confirm(confirmText)) return;
+
         const rStat = verifyExpirationRisk(exp);
         if (rStat.alert) {
             alert(`Warning: ${mName} -- ${rStat.text}`);
@@ -648,10 +668,19 @@
         });
 
         refreshLiveUITable();
+        const idx = MasterDrugData.findIndex(item => item.name === mName);
+        if (idx !== -1) scrollToRow(idx);
     }
 
     function dropLogItem(id) {
         recordedLogs = recordedLogs.filter(e => e.id !== id);
+        refreshLiveUITable();
+    }
+
+    function dropDrugLogs(idx) {
+        const item = MasterDrugData[idx];
+        if (!item) return;
+        recordedLogs = recordedLogs.filter(log => log.name !== item.name);
         refreshLiveUITable();
     }
 
@@ -664,10 +693,23 @@
             const usedQty = recordedLogs.filter(x => x.name === item.name).reduce((s, c) => s + c.qty, 0);
             const balance = item.defStock > 0 ? Math.max(0, item.defStock - usedQty) : '';
 
-            // Determine expiration info from recorded logs for this drug (use earliest / closest expiry)
-            const exps = recordedLogs.filter(x => x.name === item.name).map(x => x.exp).filter(Boolean);
-            let expToShow = exps.length ? exps.reduce((a,b) => a < b ? a : b) : '';
-            const rStat = verifyExpirationRisk(expToShow);
+            const expList = [...new Set(recordedLogs
+                .filter(x => x.name === item.name)
+                .map(x => x.exp)
+                .filter(Boolean))].sort();
+            const expToShow = expList.length ? expList.join('<br>') : '';
+
+            let rStat = { label: '<span class="badge badge-success">No Date</span>', alert: false, days: null, text: 'No date' };
+            if (expList.length) {
+                rStat = expList.reduce((worst, expDate) => {
+                    const current = verifyExpirationRisk(expDate);
+                    if (!worst) return current;
+                    if (current.label.includes('Expired')) return current;
+                    if (worst.label.includes('Expired')) return worst;
+                    if (current.label.includes('Alert')) return current;
+                    return worst;
+                }, null);
+            }
 
             const tr = document.createElement('tr');
             if (rStat.alert) tr.style.backgroundColor = 'rgba(192,57,43,0.06)';
@@ -679,9 +721,12 @@
                 <td style="text-align:center;">${item.defStock || ''}</td>
                 <td style="text-align:center; font-weight:bold;">${usedQty || ''}</td>
                 <td style="text-align:center;">${balance}</td>
-                <td style="text-align:center;">${expToShow ? '📅 ' + expToShow : ''}</td>
+                <td style="text-align:center; line-height:1.35;">${expToShow}</td>
                 <td style="text-align:center;">${rStat.label}</td>
-                <td style="text-align:center;"><button class="btn" style="background:#1f6f9f; padding:6px 8px; border-radius:6px;" onclick="selectDrugForAdd(${idx})">Add</button></td>
+                <td style="text-align:center; display:flex; justify-content:center; gap:6px;">
+                    <button class="btn" style="background:#1f6f9f; padding:6px 8px; border-radius:6px;" onclick="selectDrugForAdd(${idx})">Add</button>
+                    <button class="btn" style="background:#c0392b; padding:6px 8px; border-radius:6px;" onclick="dropDrugLogs(${idx})">Delete</button>
+                </td>
             `;
             body.appendChild(tr);
         });
@@ -694,6 +739,19 @@
         const selector = document.getElementById('drugSelect');
         selector.value = item.name;
         document.getElementById('useQty').focus();
+    }
+
+    function scrollToRow(idx) {
+        const body = document.querySelector('#liveStreamTable tbody');
+        const row = body.children[idx];
+        if (row) {
+            row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            row.style.transition = 'background-color 0.4s ease';
+            row.style.backgroundColor = 'rgba(46, 204, 113, 0.16)';
+            setTimeout(() => {
+                row.style.backgroundColor = '';
+            }, 900);
+        }
     }
 
     function formatPrintDate(dStr) {
