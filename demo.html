@@ -1153,15 +1153,27 @@
         alert('Entry saved successfully and the form is ready for the next case.');
     }
 
-    function saveCurrentDateData() {
+    async function saveCurrentDateData() {
         const dateKey = activeDate || document.getElementById('pDate').value;
         const payload = {
             date: dateKey,
             logs: recordedLogs.filter(log => log.date === dateKey)
         };
-        localStorage.setItem(`anesthesia-${dateKey}`, JSON.stringify(payload));
-        localStorage.setItem('anesthesia-last-date', dateKey);
-        localStorage.setItem('anesthesia-expirations', JSON.stringify(expirationRecords));
+
+        try {
+            await fetch('/api/entries', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            await fetch('/api/expirations', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(expirationRecords)
+            });
+        } catch (err) {
+            console.error('Failed to save data:', err);
+        }
     }
 
     function loadSelectedDate() {
@@ -1170,33 +1182,33 @@
         refreshStoredDataForDate(selectedDate);
     }
 
-    function refreshStoredDataForDate(dateValue) {
+    async function refreshStoredDataForDate(dateValue) {
         activeDate = dateValue;
-        const raw = localStorage.getItem(`anesthesia-${dateValue}`);
-        const stored = raw ? JSON.parse(raw) : { logs: [] };
-        const expirationRaw = localStorage.getItem('anesthesia-expirations');
-        const expirationStorage = expirationRaw ? JSON.parse(expirationRaw) : [];
-        const todayKey = new Date().toISOString().split('T')[0];
-        const isToday = dateValue === todayKey;
-        recordedLogs = (stored.logs || []).filter(log => log.date === dateValue);
-        expirationRecords = expirationStorage.filter(entry => {
-            if (!entry.exp) return false;
-            return true;
-        });
-        document.getElementById('pDate').value = dateValue;
-        document.getElementById('historyDate').value = dateValue;
-        document.getElementById('viewDateInfo').innerText = `Viewing records for ${dateValue}`;
-        refreshLiveUITable();
-        refreshExpirationTable();
+        try {
+            const [entriesResponse, expirationsResponse] = await Promise.all([
+                fetch(`/api/entries?date=${encodeURIComponent(dateValue)}`),
+                fetch('/api/expirations')
+            ]);
+            const entries = await entriesResponse.json();
+            const expirationStorage = await expirationsResponse.json();
+            recordedLogs = (entries || []).flatMap(entry => entry.logs || []).filter(log => log.date === dateValue);
+            expirationRecords = (expirationStorage || []).filter(entry => entry && entry.exp);
+            document.getElementById('pDate').value = dateValue;
+            document.getElementById('historyDate').value = dateValue;
+            document.getElementById('viewDateInfo').innerText = `Viewing records for ${dateValue}`;
+            refreshLiveUITable();
+            refreshExpirationTable();
+        } catch (err) {
+            console.error('Failed to load data:', err);
+        }
     }
 
-    function dayReset() {
+    async function dayReset() {
         const resetDate = activeDate || document.getElementById('pDate').value;
-        localStorage.removeItem(`anesthesia-${resetDate}`);
         recordedLogs = [];
         refreshLiveUITable();
         refreshExpirationTable();
-        saveCurrentDateData();
+        await saveCurrentDateData();
         alert('Day reset completed.');
     }
 

@@ -1,0 +1,9 @@
+{
+  "name": "studentwork-json-storage",
+  "version": "1.0.0",
+  "description": "Simple JSON file-backed storage for the anesthesia checklist app",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  }
+}
